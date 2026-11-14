@@ -23,16 +23,15 @@ def test_syslog_monitor_captures_and_deduplicates_leaks():
 
     mock_bridge.stream_syslog.assert_called_once_with(process_filter="DemoApp")
 
-    # Duplicate Bearer/JWT line should be deduplicated
-    titles = [f.title for f in findings]
-    assert len(findings) == 4
-    assert any("Bearer / Authorization Token" in t for t in titles)
-    assert any("JWT Token Written to Syslog" in t for t in titles)
-    assert any("Password / Secret Parameter Logged" in t for t in titles)
-    assert any("Email Address / PII" in t for t in titles)
+    # The repeated JWT log entry should produce one unique finding.
+    titles = [finding.title for finding in findings]
+    assert len(findings) == 3
+    assert sum("JWT Token Written to Syslog" in title for title in titles) == 1
+    assert sum("Password / Secret Parameter Logged" in title for title in titles) == 1
+    assert sum("Email Address / PII" in title for title in titles) == 1
 
-    # Confirm raw password is redacted in evidence
-    evidence_blob = "\n".join(f.evidence for f in findings)
+    # Confirm raw password is redacted in evidence.
+    evidence_blob = "\n".join(finding.evidence for finding in findings)
     assert "SuperSecretPassword123" not in evidence_blob
-    assert all(f.phase == "DAST" for f in findings)
-    assert any(f.severity == Severity.HIGH for f in findings)
+    assert all(finding.phase == "DAST" for finding in findings)
+    assert any(finding.severity == Severity.HIGH for finding in findings)

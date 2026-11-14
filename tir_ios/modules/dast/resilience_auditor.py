@@ -27,37 +27,92 @@ class ResilienceRuntimeAuditor:
         self.keychain_auditor = KeychainAndSnapshotAuditor(registry=self.registry)
         self._session: Optional[frida.core.Session] = None
         self._script: Optional[frida.core.Script] = None
+        self._device = None
+        self._spawned_pid: Optional[int] = None
+        self._process_resumed = False
 
     def start(self, spawn: bool = False) -> None:
-        device = frida.get_device(self.udid) if self.udid else frida.get_usb_device(timeout=5)
+        if self._session is not None or self._script is not None or self._spawned_pid is not None:
+            raise RuntimeError("Resilience auditor is already started.")
+
+        self._device = frida.get_device(self.udid) if self.udid else frida.get_usb_device(timeout=5)
         source = self.agent_path.read_text(encoding="utf-8")
 
-        if spawn:
-            pid = device.spawn([self.bundle_id])
-            self._session = device.attach(pid)
-            self._script = self._session.create_script(source)
-            self._script.on("message", self._on_message)
-            self._script.load()
-            device.resume(pid)
-        else:
-            self._session = device.attach(self.bundle_id)
+        try:
+            if spawn:
+                self._spawned_pid = self._device.spawn([self.bundle_id])
+                self._process_resumed = False
+                self._session = self._device.attach(self._spawned_pid)
+            else:
+                self._session = self._device.attach(self.bundle_id)
+
             self._script = self._session.create_script(source)
             self._script.on("message", self._on_message)
             self._script.load()
 
-    def stop(self) -> List[Finding]:
-        telemetry: Dict[str, Any] = {}
-        if self._script:
+            if self._spawned_pid is not None:
+                self._device.resume(self._spawned_pid)
+                self._process_resumed = True
+        except Exception:
+            self._cleanup_after_start_failure()
+            raise
+
+    def _cleanup_after_start_failure(self) -> None:
+        if self._script is not None:
             try:
-                telemetry = self._script.exports_sync.get_telemetry_summary()
                 self._script.unload()
             except Exception:
                 pass
-        if self._session:
+        if self._session is not None:
             try:
                 self._session.detach()
             except Exception:
                 pass
+        if self._spawned_pid is not None and not self._process_resumed and self._device is not None:
+            try:
+                self._device.resume(self._spawned_pid)
+                self._process_resumed = True
+            except Exception:
+                pass
+        self._script = None
+        self._session = None
+        self._spawned_pid = None
+        self._device = None
+
+    def stop(self) -> List[Finding]:
+        telemetry: Dict[str, Any] = {}
+        cleanup_error: Optional[Exception] = None
+        if self._script is not None:
+            try:
+                telemetry = self._script.exports_sync.get_telemetry_summary()
+            except Exception as exc:
+                cleanup_error = exc
+            try:
+                self._script.unload()
+            except frida.InvalidOperationError:
+                pass
+            except Exception as exc:
+                cleanup_error = cleanup_error or exc
+        if self._session is not None:
+            try:
+                self._session.detach()
+            except frida.InvalidOperationError:
+                pass
+            except Exception as exc:
+                cleanup_error = cleanup_error or exc
+        if self._spawned_pid is not None and not self._process_resumed and self._device is not None:
+            try:
+                self._device.resume(self._spawned_pid)
+                self._process_resumed = True
+            except Exception as exc:
+                cleanup_error = cleanup_error or exc
+
+        self._script = None
+        self._session = None
+        self._spawned_pid = None
+        self._device = None
+        if cleanup_error is not None:
+            raise RuntimeError(f"Frida resilience cleanup failed: {cleanup_error}") from cleanup_error
 
         findings = self.keychain_auditor.get_findings()
 

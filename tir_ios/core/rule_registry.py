@@ -28,6 +28,9 @@ class RuleRegistry:
         title_suffix: str = "",
         severity_override: Optional[Severity] = None,
         cvss_override: Optional[float] = None,
+        confidence: str = "Unassessed",
+        evidence_source: Optional[str] = None,
+        verification_status: str = "Not Verified",
     ) -> Finding:
         if rule_id not in self.rules:
             raise KeyError(f"Unknown TIRiOS rule ID: {rule_id}")
@@ -48,4 +51,7 @@ class RuleRegistry:
             location=location,
             evidence=evidence,
             remediation=rule["remediation"],
+            confidence=confidence,
+            evidence_source=evidence_source or ("Static Analysis (SAST)" if rule["phase"] == "SAST" else "Dynamic Analysis (DAST)"),
+            verification_status=verification_status,
         )

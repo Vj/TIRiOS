@@ -68,6 +68,7 @@ SECRET_PATTERNS: Dict[str, Tuple[re.Pattern[str], Severity | None, str]] = {
 SCANNABLE_EXTENSIONS = {".plist", ".json", ".js", ".xml", ".strings", ".yaml", ".yml", ".config", ".env"}
 UUID_PATTERN = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 HEX_HASH_PATTERN = re.compile(r"^[0-9a-fA-F]{32,128}$")
+SWIFT_MANGLING_PATTERN = re.compile(r"^(?:s\d+[A-Za-z0-9_]+|TtC\d+[A-Za-z0-9_]+)$")
 CANDIDATE_TOKEN_PATTERN = re.compile(r"\b[A-Za-z0-9+/=_\-]{24,128}\b")
 
 
@@ -209,6 +210,10 @@ class SecretsScanner:
     @staticmethod
     def _is_noise_token(token: str) -> bool:
         if UUID_PATTERN.match(token) or HEX_HASH_PATTERN.match(token):
+            return True
+        # The token regex starts at a word boundary, so it can strip the leading
+        # "$" from Swift's "$s..." mangled symbols. Filter that remainder too.
+        if SWIFT_MANGLING_PATTERN.match(token):
             return True
         if token.startswith(("_OBJC_", "$s", "_$s", "com.apple.", "NS", "UI", "WK", "CF")):
             return True

@@ -45,6 +45,9 @@ def merge_scan_reports(report_paths: List[Path]) -> ScanReport:
                     location=item["location"],
                     evidence=item["evidence"],
                     remediation=item["remediation"],
+                    confidence=item.get("confidence", "Unassessed"),
+                    evidence_source=item.get("evidence_source", "Unspecified"),
+                    verification_status=item.get("verification_status", "Not Verified"),
                 )
             )
 

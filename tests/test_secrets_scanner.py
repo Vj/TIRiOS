@@ -68,3 +68,7 @@ def test_shannon_entropy_calculation():
     assert SecretsScanner.shannon_entropy("") == 0.0
     assert SecretsScanner.shannon_entropy("aaaaaaaaaaaaaaaa") == 0.0
     assert SecretsScanner.shannon_entropy("aB9$kL2@pQ7!zX4&") == 4.0
+
+def test_entropy_noise_filter_rejects_swift_mangled_symbol_but_keeps_token_candidate():
+    assert SecretsScanner._is_noise_token("s7DemoApp14ViewControllerC")
+    assert not SecretsScanner._is_noise_token("9xKmP2vL8qR4zW7nB5jT1yH6cF3dG0sA")

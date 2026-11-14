@@ -54,35 +54,89 @@ class FridaRuntimeAuditor:
         self._seen: Set[Tuple[str, str]] = set()
         self._session: Optional[frida.core.Session] = None
         self._script: Optional[frida.core.Script] = None
+        self._device = None
+        self._spawned_pid: Optional[int] = None
+        self._process_resumed = False
 
     def start(self, spawn: bool = True) -> None:
-        device = frida.get_device(self.udid) if self.udid else frida.get_usb_device(timeout=5)
+        if self._session is not None or self._script is not None or self._spawned_pid is not None:
+            raise RuntimeError("Frida auditor is already started.")
+
+        self._device = frida.get_device(self.udid) if self.udid else frida.get_usb_device(timeout=5)
         agent_source = self.agent_path.read_text(encoding="utf-8")
 
-        if spawn:
-            pid = device.spawn([self.bundle_id])
-            self._session = device.attach(pid)
-            self._script = self._session.create_script(agent_source)
-            self._script.on("message", self._on_message)
-            self._script.load()
-            device.resume(pid)
-        else:
-            self._session = device.attach(self.bundle_id)
+        try:
+            if spawn:
+                self._spawned_pid = self._device.spawn([self.bundle_id])
+                self._process_resumed = False
+                self._session = self._device.attach(self._spawned_pid)
+            else:
+                self._session = self._device.attach(self.bundle_id)
+
             self._script = self._session.create_script(agent_source)
             self._script.on("message", self._on_message)
             self._script.load()
 
+            if self._spawned_pid is not None:
+                self._device.resume(self._spawned_pid)
+                self._process_resumed = True
+        except Exception:
+            # Frida spawn suspends the process. Always make a best-effort resume
+            # before releasing instrumentation if any later startup step fails.
+            self._cleanup_after_start_failure()
+            raise
+
+    def _cleanup_after_start_failure(self) -> None:
+        if self._script is not None:
+            try:
+                self._script.unload()
+            except Exception:
+                pass
+        if self._session is not None:
+            try:
+                self._session.detach()
+            except Exception:
+                pass
+        if self._spawned_pid is not None and not self._process_resumed and self._device is not None:
+            try:
+                self._device.resume(self._spawned_pid)
+                self._process_resumed = True
+            except Exception:
+                pass
+        self._script = None
+        self._session = None
+        self._spawned_pid = None
+        self._device = None
+
     def stop(self) -> List[Finding]:
-        if self._script:
+        cleanup_error: Optional[Exception] = None
+        if self._script is not None:
             try:
                 self._script.unload()
             except frida.InvalidOperationError:
                 pass
-        if self._session:
+            except Exception as exc:
+                cleanup_error = exc
+        if self._session is not None:
             try:
                 self._session.detach()
             except frida.InvalidOperationError:
                 pass
+            except Exception as exc:
+                cleanup_error = cleanup_error or exc
+        if self._spawned_pid is not None and not self._process_resumed and self._device is not None:
+            try:
+                self._device.resume(self._spawned_pid)
+                self._process_resumed = True
+            except Exception as exc:
+                cleanup_error = cleanup_error or exc
+
+        self._script = None
+        self._session = None
+        self._spawned_pid = None
+        self._device = None
+        if cleanup_error is not None:
+            raise RuntimeError(f"Frida cleanup failed: {cleanup_error}") from cleanup_error
         return list(self._findings)
 
     def _on_message(self, message: dict, _data: object) -> None:

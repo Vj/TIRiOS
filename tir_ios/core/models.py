@@ -24,6 +24,9 @@ class Finding:
     location: str
     evidence: str
     remediation: str
+    confidence: str = "Unassessed"
+    evidence_source: str = "Unspecified"
+    verification_status: str = "Not Verified"
 
     def to_dict(self) -> Dict[str, Any]:
         data = asdict(self)
