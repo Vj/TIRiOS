@@ -126,7 +126,7 @@ def run_dast(
         else:
             click.echo(report.to_json())
 
-    except (DeviceConnectionError, Exception) as exc:
+    except Exception as exc:
         click.echo(f"[!] DAST session failed: {exc}", err=True)
         sys.exit(1)
 
