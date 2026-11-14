@@ -27,6 +27,7 @@ class RuleRegistry:
         evidence: str,
         title_suffix: str = "",
         severity_override: Optional[Severity] = None,
+        cvss_override: Optional[float] = None,
     ) -> Finding:
         if rule_id not in self.rules:
             raise KeyError(f"Unknown TIRiOS rule ID: {rule_id}")
@@ -34,6 +35,7 @@ class RuleRegistry:
         rule = self.rules[rule_id]
         title = f"{rule['title']} {title_suffix}".strip()
         severity = severity_override or Severity(rule["severity"])
+        cvss = float(cvss_override) if cvss_override is not None else float(rule["cvss_score"])
 
         return Finding(
             finding_id=rule["rule_id"],
