@@ -104,12 +104,12 @@ def run_dast(
             findings_by_component = {}
             cleanup_errors = []
             try:
-                syslog_mon.start()
                 started_components.append(("syslog", syslog_mon))
-                frida_auditor.start(spawn=True)
+                syslog_mon.start()
                 started_components.append(("frida", frida_auditor))
-                resilience_auditor.start(spawn=False)
+                frida_auditor.start(spawn=True)
                 started_components.append(("resilience", resilience_auditor))
+                resilience_auditor.start(spawn=False)
                 click.echo(f"[*] Monitoring {bundle_id} for {duration}s. Exercise app flows on device...")
                 time.sleep(duration)
             finally:
