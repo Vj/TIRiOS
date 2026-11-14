@@ -73,7 +73,8 @@ tir_ios/
   - **macOS:** `brew install pango libffi`
   - **Ubuntu/Debian:** `sudo apt-get install -y libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info`
   - **Windows:** Install the GTK3 runtime or follow the [WeasyPrint Windows installation guide](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#windows).
-- **For DAST (Optional):** An authorized iOS test device connected via USB with developer pairing enabled (`usbmuxd`), `frida-server` running on the device (or `FridaGadget.dylib` embedded for non-jailbroken testing), and `mitmproxy` installed on the host.
+- **For DAST (Optional):** Install the `dast` extra. An authorized iOS test device connected via USB with developer pairing enabled (`usbmuxd`), `frida-server` running on the device (or `FridaGadget.dylib` embedded for non-jailbroken testing), and `mitmproxy` installed on the host.
+- **For HTML/PDF reporting (Optional):** Install the `reporting` extra. WeasyPrint may also require platform-specific system libraries; see its installation guide.
 
 ### Setup
 
@@ -84,7 +85,11 @@ cd tir_ios
 python -m venv .venv
 source .venv/bin/activate        # On Windows: .venv\Scripts\activate
 
-pip install -e ".[dev]"
+# Minimal SAST CLI
+pip install -e .
+
+# Full DAST, HTML/PDF reporting, and development/test tooling
+pip install -e ".[dast,reporting,dev]"
 ```
 
 ---
