@@ -3,18 +3,12 @@ import sys
 import time
 import click
 
-from tir_ios.core.device_bridge import DeviceConnectionError, IOSDeviceBridge
 from tir_ios.core.ipa_extractor import IPAExtractionError, IPAWorkspace
 from tir_ios.core.models import ScanReport
-from tir_ios.modules.dast.frida_runner import FridaRuntimeAuditor
-from tir_ios.modules.dast.resilience_auditor import ResilienceRuntimeAuditor
-from tir_ios.modules.dast.storage_monitor import SandboxStorageMonitor
-from tir_ios.modules.dast.syslog_monitor import SyslogLeakMonitor
 from tir_ios.modules.sast.macho_inspector import MachOInspector
 from tir_ios.modules.sast.plist_auditor import PlistAuditor
 from tir_ios.modules.sast.secrets_scan import SecretsScanner
 from tir_ios.reporting.merger import merge_scan_reports
-from tir_ios.reporting.pdf_generator import PDFReportGenerator
 
 
 @click.group()
@@ -57,9 +51,11 @@ def scan_ipa(ipa_path: Path, output: Path | None, html_output: Path | None, pdf_
                 output.write_text(report.to_json(), encoding="utf-8")
                 click.echo(f"[+] JSON report written to {output} ({len(report.findings)} findings)")
             if html_output:
+                from tir_ios.reporting.pdf_generator import PDFReportGenerator
                 PDFReportGenerator().generate_html(report, html_output)
                 click.echo(f"[+] HTML report written to {html_output} ({len(report.findings)} findings)")
             if pdf_output:
+                from tir_ios.reporting.pdf_generator import PDFReportGenerator
                 PDFReportGenerator().generate_pdf(report, pdf_output)
                 click.echo(f"[+] PDF report written to {pdf_output} ({len(report.findings)} findings)")
             if not output and not html_output and not pdf_output:
@@ -85,6 +81,12 @@ def run_dast(
 ) -> None:
     """Run live DAST instrumentation (sandbox diff + syslog leak monitor + Frida runtime checks)."""
     try:
+        from tir_ios.core.device_bridge import DeviceConnectionError, IOSDeviceBridge
+        from tir_ios.modules.dast.frida_runner import FridaRuntimeAuditor
+        from tir_ios.modules.dast.resilience_auditor import ResilienceRuntimeAuditor
+        from tir_ios.modules.dast.storage_monitor import SandboxStorageMonitor
+        from tir_ios.modules.dast.syslog_monitor import SyslogLeakMonitor
+
         bridge = IOSDeviceBridge(udid=udid)
         summary = bridge.device_summary()
         click.echo(f"[+] Connected to {summary}")
@@ -140,6 +142,7 @@ def merge_reports_cmd(report_files: tuple[Path, ...], output: Path | None, pdf_o
         output.write_text(merged.to_json(), encoding="utf-8")
         click.echo(f"[+] Merged JSON written to {output} ({len(merged.findings)} unique findings)")
     if pdf_output:
+        from tir_ios.reporting.pdf_generator import PDFReportGenerator
         PDFReportGenerator().generate_pdf(merged, pdf_output)
         click.echo(f"[+] Combined PDF report written to {pdf_output}")
     if not output and not pdf_output:
