@@ -210,6 +210,10 @@ class SecretsScanner:
     def _is_noise_token(token: str) -> bool:
         if UUID_PATTERN.match(token) or HEX_HASH_PATTERN.match(token):
             return True
+        # The token regex starts at a word boundary, so it can strip the leading
+        # "$" from Swift's "$s..." mangled symbols. Filter that remainder too.
+        if SWIFT_MANGLING_PATTERN.match(token):
+            return True
         if token.startswith(("_OBJC_", "$s", "_$s", "com.apple.", "NS", "UI", "WK", "CF")):
             return True
         has_upper = any(c.isupper() for c in token)
