@@ -11,7 +11,7 @@ def merge_scan_reports(report_paths: List[Path]) -> ScanReport:
         raise ValueError("At least one report JSON path is required.")
 
     base_data = json.loads(report_paths[0].read_text(encoding="utf-8"))
-    meta = base_data["metadata"]
+    meta = base_data.get("metadata", {})
 
     merged = ScanReport(
         app_name=meta.get("app_name", "Unknown"),
@@ -24,8 +24,9 @@ def merge_scan_reports(report_paths: List[Path]) -> ScanReport:
     seen: Set[Tuple[str, str, str]] = set()
     for path in report_paths:
         data = json.loads(path.read_text(encoding="utf-8"))
-        if not merged.architectures and data["metadata"].get("architectures"):
-            merged.architectures = data["metadata"]["architectures"]
+        metadata = data.get("metadata", {})
+        if not merged.architectures and metadata.get("architectures"):
+            merged.architectures = metadata["architectures"]
 
         for item in data.get("findings", []):
             fp = (item["finding_id"], item["location"], item["evidence"])
