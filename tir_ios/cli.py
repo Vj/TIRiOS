@@ -100,14 +100,36 @@ def run_dast(
             frida_auditor = FridaRuntimeAuditor(bundle_id=bundle_id, udid=bridge.udid)
             resilience_auditor = ResilienceRuntimeAuditor(bundle_id=bundle_id, udid=bridge.udid)
 
-            syslog_mon.start()
-            frida_auditor.start(spawn=True)
-            resilience_auditor.start(spawn=False)
-            click.echo(f"[*] Monitoring {bundle_id} for {duration}s. Exercise app flows on device...")
+            started_components = []
+            findings_by_component = {}
+            cleanup_errors = []
+            try:
+                syslog_mon.start()
+                started_components.append(("syslog", syslog_mon))
+                frida_auditor.start(spawn=True)
+                started_components.append(("frida", frida_auditor))
+                resilience_auditor.start(spawn=False)
+                started_components.append(("resilience", resilience_auditor))
+                click.echo(f"[*] Monitoring {bundle_id} for {duration}s. Exercise app flows on device...")
+                time.sleep(duration)
+            finally:
+                # Stop every successfully started component, even if a later
+                # component fails during startup or the monitoring window errors.
+                for component_name, component in reversed(started_components):
+                    try:
+                        findings_by_component[component_name] = component.stop()
+                    except Exception as cleanup_exc:
+                        cleanup_errors.append(f"{component_name}: {cleanup_exc}")
+                        click.echo(f"[!] DAST cleanup failed for {component_name}: {cleanup_exc}", err=True)
 
-            time.sleep(duration)
+                if cleanup_errors and sys.exc_info()[0] is None:
+                    raise RuntimeError("One or more DAST components failed to stop: " + "; ".join(cleanup_errors))
 
-            live_findings = syslog_mon.stop() + frida_auditor.stop() + resilience_auditor.stop()
+            live_findings = (
+                findings_by_component.get("syslog", [])
+                + findings_by_component.get("frida", [])
+                + findings_by_component.get("resilience", [])
+            )
             click.echo("[*] Analyzing post-session sandbox storage and backup attributes...")
             storage_findings = storage_mon.analyze_post_session()
 
