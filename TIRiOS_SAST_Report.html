@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TIRiOS VAPT Security Assessment Report - DVIA-v2</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 16mm 18mm 16mm;
+      @top-left {
+        content: "TIRiOS | iOS Mobile Application VAPT Report";
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 8pt;
+        color: #64748b;
+      }
+      @top-right {
+        content: "com.highaltitudehacks.DVIAswiftv2 (v2.0)";
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 8pt;
+        color: #64748b;
+      }
+      @bottom-left {
+        content: "CONFIDENTIAL — OWASP MASVS v2.0 / MASTG Aligned";
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 8pt;
+        color: #64748b;
+      }
+      @bottom-right {
+        content: "Page " counter(page) " of " counter(pages);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 8pt;
+        color: #64748b;
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b;
+      font-size: 9.5pt;
+      line-height: 1.45;
+      margin: 0;
+    }
+
+    .cover-banner {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 22px 24px;
+      border-radius: 6px;
+      margin-bottom: 18px;
+      border-left: 6px solid #38bdf8;
+    }
+
+    .cover-banner h1 {
+      margin: 0 0 4px 0;
+      font-size: 18pt;
+      letter-spacing: 0.3px;
+    }
+
+    .cover-banner .subtitle {
+      color: #94a3b8;
+      font-size: 9.5pt;
+      margin: 0;
+    }
+
+    h2 {
+      font-size: 12pt;
+      color: #0f172a;
+      border-bottom: 1.5px solid #cbd5e1;
+      padding-bottom: 4px;
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+
+    .meta-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+      font-size: 9pt;
+    }
+
+    .meta-table td {
+      padding: 6px 10px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .meta-table td.label {
+      background: #f8fafc;
+      font-weight: 600;
+      width: 22%;
+      color: #475569;
+    }
+
+    .kpi-grid {
+      display: table;
+      width: 100%;
+      table-layout: fixed;
+      margin-bottom: 16px;
+      border-spacing: 8px 0;
+    }
+
+    .kpi-card {
+      display: table-cell;
+      border: 1px solid #e2e8f0;
+      border-radius: 5px;
+      padding: 10px 8px;
+      text-align: center;
+      background: #f8fafc;
+    }
+
+    .kpi-card .count {
+      font-size: 16pt;
+      font-weight: 700;
+      display: block;
+    }
+
+    .kpi-card .lbl {
+      font-size: 7.5pt;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .sev-Critical { color: #991b1b; border-top: 3px solid #dc2626; }
+    .sev-High     { color: #9a3412; border-top: 3px solid #ea580c; }
+    .sev-Medium   { color: #92400e; border-top: 3px solid #d97706; }
+    .sev-Low      { color: #1e40af; border-top: 3px solid #2563eb; }
+    .sev-Info     { color: #334155; border-top: 3px solid #64748b; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-size: 7.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #ffffff;
+    }
+
+    .badge-Critical { background: #dc2626; }
+    .badge-High     { background: #ea580c; }
+    .badge-Medium   { background: #d97706; }
+    .badge-Low      { background: #2563eb; }
+    .badge-Info     { background: #64748b; }
+
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8.5pt;
+      margin-bottom: 18px;
+    }
+
+    .summary-table th {
+      background: #0f172a;
+      color: #f8fafc;
+      text-align: left;
+      padding: 6px 8px;
+      font-weight: 600;
+    }
+
+    .summary-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+
+    .finding-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      margin-bottom: 12px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .finding-header {
+      background: #f1f5f9;
+      padding: 7px 10px;
+      border-bottom: 1px solid #cbd5e1;
+      font-weight: 600;
+    }
+
+    .finding-body {
+      padding: 8px 10px;
+      font-size: 8.8pt;
+    }
+
+    .finding-meta {
+      color: #475569;
+      font-size: 8pt;
+      margin-bottom: 6px;
+    }
+
+    .code-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 3px solid #475569;
+      padding: 5px 8px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 8pt;
+      word-break: break-all;
+      margin: 4px 0 6px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="cover-banner">
+    <h1>TIRiOS Security Assessment Report</h1>
+    <p class="subtitle">Automated Static &amp; Dynamic Vulnerability Assessment (OWASP MASVS v2.0 / MASTG)</p>
+  </div>
+
+  <h2>1. Target Application &amp; Assessment Metadata</h2>
+  <table class="meta-table">
+    <tr>
+      <td class="label">Application Name</td>
+      <td>DVIA-v2</td>
+      <td class="label">Bundle Identifier</td>
+      <td><code>com.highaltitudehacks.DVIAswiftv2</code></td>
+    </tr>
+    <tr>
+      <td class="label">App Version</td>
+      <td>2.0</td>
+      <td class="label">Minimum iOS</td>
+      <td>iOS 12.0</td>
+    </tr>
+    <tr>
+      <td class="label">Architectures</td>
+      <td>ARM64</td>
+      <td class="label">Generated At (UTC)</td>
+      <td>2026-11-14 04:29 UTC</td>
+    </tr>
+  </table>
+
+  <h2>2. Executive Risk Summary</h2>
+  <div class="kpi-grid">
+    
+    <div class="kpi-card sev-Critical">
+      <span class="count">0</span>
+      <span class="lbl">Critical</span>
+    </div>
+    
+    <div class="kpi-card sev-High">
+      <span class="count">3</span>
+      <span class="lbl">High</span>
+    </div>
+    
+    <div class="kpi-card sev-Medium">
+      <span class="count">21</span>
+      <span class="lbl">Medium</span>
+    </div>
+    
+    <div class="kpi-card sev-Low">
+      <span class="count">2</span>
+      <span class="lbl">Low</span>
+    </div>
+    
+    <div class="kpi-card sev-Info">
+      <span class="count">2</span>
+      <span class="lbl">Info</span>
+    </div>
+    
+  </div>
+
+  
+  <table class="summary-table">
+    <thead>
+      <tr>
+        <th style="width: 15%;">Rule ID</th>
+        <th style="width: 10%;">Severity</th>
+        <th style="width: 8%;">CVSS</th>
+        <th style="width: 18%;">OWASP MASVS</th>
+        <th style="width: 49%;">Finding Title</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-015</code></td>
+        <td><span class="badge badge-High">High</span></td>
+        <td>7.8</td>
+        <td>MASVS-RESILIENCE-2</td>
+        <td>Debuggable Entitlement Enabled (get-task-allow = true)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-006</code></td>
+        <td><span class="badge badge-High">High</span></td>
+        <td>7.4</td>
+        <td>MASVS-CRYPTO-1</td>
+        <td>Weak Cryptographic Algorithms or Cipher Modes Detected [ARM64]</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-010</code></td>
+        <td><span class="badge badge-High">High</span></td>
+        <td>7.4</td>
+        <td>MASVS-NETWORK-1</td>
+        <td>App Transport Security (ATS) Globally Disabled</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-021</code></td>
+        <td><span class="badge badge-Medium">Medium</span></td>
+        <td>5.3</td>
+        <td>MASVS-STORAGE-1</td>
+        <td>High-Entropy String (Potential Embedded Secret)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-005</code></td>
+        <td><span class="badge badge-Low">Low</span></td>
+        <td>3.7</td>
+        <td>MASVS-CODE-2</td>
+        <td>Insecure C String / Memory or Weak PRNG Functions Imported [ARM64]</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-013</code></td>
+        <td><span class="badge badge-Low">Low</span></td>
+        <td>3.5</td>
+        <td>MASVS-PLATFORM-1</td>
+        <td>Custom URL Schemes Exposed (Deep Link Hijacking Surface)</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-004</code></td>
+        <td><span class="badge badge-Info">Info</span></td>
+        <td>0.0</td>
+        <td>MASVS-RESILIENCE-3</td>
+        <td>Mach-O Binary Unencrypted (cryptid = 0) [ARM64]</td>
+      </tr>
+      
+      <tr>
+        <td><code>TIR-IOS-SAST-014</code></td>
+        <td><span class="badge badge-Info">Info</span></td>
+        <td>0.0</td>
+        <td>MASVS-PLATFORM-1</td>
+        <td>Sensitive Device Privacy Permissions Declared</td>
+      </tr>
+      
+    </tbody>
+  </table>
+
+  <h2>3. Detailed Technical Findings &amp; Remediation</h2>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-High">High</span>
+      &nbsp;<code>TIR-IOS-SAST-015</code> — Debuggable Entitlement Enabled (get-task-allow = true)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 7.8 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-RESILIENCE-2 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0084
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/embedded.mobileprovision (Entitlements)</code></div>
+      <div class="code-box">get-task-allow = true (allows debugger attachment and container inspection on non-jailbroken devices).</div>
+      <div><strong>Remediation:</strong> Sign release builds with an App Store or Enterprise Production Distribution profile where get-task-allow is false.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-High">High</span>
+      &nbsp;<code>TIR-IOS-SAST-006</code> — Weak Cryptographic Algorithms or Cipher Modes Detected [ARM64]
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 7.4 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-CRYPTO-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0061
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">CC_MD5: MD5 is cryptographically broken (collision attacks) (Use SHA-256 / SHA-3 via CryptoKit); CC_SHA1: SHA-1 is deprecated and vulnerable to collisions (Use SHA-256 / SHA-3 via CryptoKit)</div>
+      <div><strong>Remediation:</strong> Migrate CommonCrypto implementations to Apple CryptoKit using SHA-256/SHA-3 and AES-GCM or ChaCha20-Poly1305.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-High">High</span>
+      &nbsp;<code>TIR-IOS-SAST-010</code> — App Transport Security (ATS) Globally Disabled
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 7.4 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-NETWORK-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0065
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/Info.plist -> NSAppTransportSecurity</code></div>
+      <div class="code-box">NSAllowsArbitraryLoads = true (permits cleartext HTTP connections to any domain).</div>
+      <div><strong>Remediation:</strong> Remove NSAllowsArbitraryLoads (or set to false) and enforce HTTPS with TLS 1.2+ across all backend endpoints.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">Token 'User...dKit' (length=116, Shannon entropy=4.64 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">Token 'User...tion' (length=127, Shannon entropy=4.65 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">Token 'User...rch/' (length=103, Shannon entropy=4.67 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">Token 'User...arch' (length=128, Shannon entropy=4.69 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">Token 'xmvv...WWto' (length=43, Shannon entropy=4.80 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">Token '_TtC...ller' (length=41, Shannon entropy=4.61 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">Token '_TtC...lass' (length=69, Shannon entropy=4.74 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">Token 'abcd...789_' (length=37, Shannon entropy=5.21 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">Token '0123...yYzZ' (length=62, Shannon entropy=5.95 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">Token 'abcd...6789' (length=62, Shannon entropy=5.95 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">Token 'MIIB...hov/' (length=104, Shannon entropy=5.25 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">Token 'wBm8...VDM/' (length=103, Shannon entropy=5.50 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">Token 'pgp2...Krx/' (length=64, Shannon entropy=5.12 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">Token '8AK9...AQAB' (length=121, Shannon entropy=5.51 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">Token 'MIIB...rSq+' (length=112, Shannon entropy=5.35 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">Token 'ggho...xi9/' (length=107, Shannon entropy=5.59 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">Token '0Os5...vDx/' (length=122, Shannon entropy=5.61 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">Token '3r2S...AQAB' (length=49, Shannon entropy=5.04 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">Token 'BDTk...Jcq+' (length=103, Shannon entropy=5.67 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA_v2.momd/VersionInfo.plist</code></div>
+      <div class="code-box">Token '47DE...SuFU' (length=43, Shannon entropy=4.96 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Medium">Medium</span>
+      &nbsp;<code>TIR-IOS-SAST-021</code> — High-Entropy String (Potential Embedded Secret)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 5.3 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-STORAGE-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0052
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/Model.momd/VersionInfo.plist</code></div>
+      <div class="code-box">Token 'PCa/...5N6M' (length=43, Shannon entropy=4.83 bits/char).</div>
+      <div><strong>Remediation:</strong> Audit the flagged string and externalize any cryptographic secrets or API tokens from client-side bundle assets.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Low">Low</span>
+      &nbsp;<code>TIR-IOS-SAST-005</code> — Insecure C String / Memory or Weak PRNG Functions Imported [ARM64]
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 3.7 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-CODE-2 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0089
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">_memcpy (Potential heap/stack buffer overflow if length is unchecked -> use memcpy_s / bounds-checked copy); _random (Predictable PRNG unsuitable for security -> use SecRandomCopyBytes); _strcpy (Buffer overflow risk (no bounds checking) -> use strlcpy / strncpy)</div>
+      <div><strong>Remediation:</strong> Replace unsafe C functions with bounded alternatives (strlcpy, snprintf) and use SecRandomCopyBytes() for cryptographic randomness.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Low">Low</span>
+      &nbsp;<code>TIR-IOS-SAST-013</code> — Custom URL Schemes Exposed (Deep Link Hijacking Surface)
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 3.5 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-PLATFORM-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0075
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/Info.plist -> CFBundleURLTypes</code></div>
+      <div class="code-box">Registered schemes: dvia, dviaswift</div>
+      <div><strong>Remediation:</strong> Migrate authentication callbacks and sensitive deep links to Universal Links (associated-domains) and strictly sanitize URL parameters.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Info">Info</span>
+      &nbsp;<code>TIR-IOS-SAST-004</code> — Mach-O Binary Unencrypted (cryptid = 0) [ARM64]
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 0.0 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-RESILIENCE-3 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0085
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/DVIA-v2</code></div>
+      <div class="code-box">LC_ENCRYPTION_INFO cryptid=0 (expected for ad-hoc/enterprise builds; App Store builds must be 1).</div>
+      <div><strong>Remediation:</strong> Verify FairPlay DRM encryption is active on the final App Store Connect build.</div>
+    </div>
+  </div>
+  
+  <div class="finding-card">
+    <div class="finding-header">
+      <span class="badge badge-Info">Info</span>
+      &nbsp;<code>TIR-IOS-SAST-014</code> — Sensitive Device Privacy Permissions Declared
+    </div>
+    <div class="finding-body">
+      <div class="finding-meta">
+        <strong>Phase:</strong> SAST &nbsp;|&nbsp;
+        <strong>CVSS v3.1:</strong> 0.0 &nbsp;|&nbsp;
+        <strong>MASVS:</strong> MASVS-PLATFORM-1 &nbsp;|&nbsp;
+        <strong>MASTG:</strong> MASTG-TEST-0074
+      </div>
+      <div><strong>Affected Location:</strong> <code>Payload/DVIA-v2.app/Info.plist</code></div>
+      <div class="code-box">Declared permissions: Camera (NSCameraUsageDescription), Face ID Biometrics (NSFaceIDUsageDescription)</div>
+      <div><strong>Remediation:</strong> Verify that every declared usage description corresponds to an active, user-facing feature.</div>
+    </div>
+  </div>
+  
+  
+
+</body>
+</html>

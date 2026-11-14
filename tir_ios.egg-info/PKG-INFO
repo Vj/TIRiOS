@@ -1,0 +1,7 @@
+Metadata-Version: 2.4
+Name: tir-ios
+Version: 0.1.0
+Summary: TIRiOS - Modular iOS VAPT Framework aligned with OWASP MASVS
+Requires-Python: >=3.11
+Requires-Dist: lief>=0.15.0
+Requires-Dist: click>=8.1.7

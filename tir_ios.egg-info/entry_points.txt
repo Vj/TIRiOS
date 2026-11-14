@@ -1,0 +1,2 @@
+[console_scripts]
+tir-ios = tir_ios.cli:cli

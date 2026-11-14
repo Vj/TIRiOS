@@ -1,0 +1,18 @@
+# Core & SAST Engine
+lief>=0.15.0
+click>=8.1.7
+
+# DAST & Device Instrumentation
+pymobiledevice3>=4.0.0
+frida>=16.0.0
+frida-tools>=12.0.0
+mitmproxy>=10.0.0
+
+# Reporting (HTML-to-PDF)
+Jinja2>=3.1.4
+weasyprint>=62.0
+
+# Development & Testing
+pytest>=8.0.0
+
+pymobiledevice3

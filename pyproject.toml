@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tir-ios"
+version = "0.1.0"
+description = "TIRiOS - Modular iOS VAPT Framework aligned with OWASP MASVS"
+requires-python = ">=3.11"
+dependencies = [
+    "lief>=0.15.0",
+    "click>=8.1.7",
+]
+
+[project.scripts]
+tir-ios = "tir_ios.cli:cli"
+
+[tool.setuptools.packages.find]
+include = ["tir_ios*"]
+
+[tool.setuptools.package-data]
+tir_ios = ["rules/*.json", "modules/dast/agents/*.js", "reporting/templates/*.j2"]
