@@ -278,6 +278,11 @@
         <strong>MASVS:</strong> {{ f.masvs_category }} &nbsp;|&nbsp;
         <strong>MASTG:</strong> {{ f.mastg_test_id }}
       </div>
+      <div class="finding-meta">
+        <strong>Confidence:</strong> {{ f.confidence | default("Unassessed") }} &nbsp;|&nbsp;
+        <strong>Evidence Source:</strong> {{ f.evidence_source | default("Unspecified") }} &nbsp;|&nbsp;
+        <strong>Verification:</strong> {{ f.verification_status | default("Not Verified") }}
+      </div>
       <div><strong>Affected Location:</strong> <code>{{ f.location }}</code></div>
       <div class="code-box">{{ f.evidence }}</div>
       <div><strong>Remediation:</strong> {{ f.remediation }}</div>
