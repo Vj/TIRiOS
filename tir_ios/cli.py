@@ -62,7 +62,7 @@ def scan_ipa(ipa_path: Path, output: Path | None, html_output: Path | None, pdf_
             if pdf_output:
                 PDFReportGenerator().generate_pdf(report, pdf_output)
                 click.echo(f"[+] PDF report written to {pdf_output} ({len(report.findings)} findings)")
-            if not output and not pdf_output:
+            if not output and not html_output and not pdf_output:
                 click.echo(report.to_json())
 
     except (IPAExtractionError, ValueError, FileNotFoundError) as exc:
