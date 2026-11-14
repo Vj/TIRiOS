@@ -41,7 +41,7 @@ class RuleRegistry:
             finding_id=rule["rule_id"],
             title=title,
             severity=severity,
-            cvss_score=float(rule["cvss_score"]),
+            cvss_score=cvss,
             masvs_category=rule["masvs_category"],
             mastg_test_id=rule["mastg_test_id"],
             phase=rule["phase"],

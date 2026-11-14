@@ -25,7 +25,6 @@ SECRET_PATTERNS: Dict[str, Tuple[re.Pattern[str], Severity | None, str]] = {
     "Google / Firebase API Key": (
         re.compile(r"\bAIza[0-9A-Za-z\-_]{35}\b"),
         Severity.MEDIUM,
-        5.3,
         "Restrict the API key by iOS Bundle ID in Google Cloud Console and enforce Firebase App Check.",
     ),
     "Stripe Secret / Restricted Key": (
