@@ -1,5 +1,6 @@
 from pathlib import Path
 import plistlib
+import stat
 import shutil
 import tempfile
 import zipfile
@@ -26,11 +27,20 @@ class IPAWorkspace:
         """Unzips the IPA and resolves (.app dir, parsed Info.plist, main Mach-O path)."""
         with zipfile.ZipFile(self.ipa_path, "r") as zf:
             # Guard against Zip Slip path traversal
-            for member in zf.namelist():
-                target = (self._temp_dir / member).resolve()
-                if not str(target).startswith(str(self._temp_dir.resolve())):
-                    raise IPAExtractionError(f"Unsafe archive entry detected: {member}")
-            zf.extractall(self._temp_dir)
+            root = self._temp_dir.resolve()
+            for info in zf.infolist():
+                member = Path(info.filename)
+                mode = info.external_attr >> 16
+                if member.is_absolute() or ".." in member.parts:
+                    raise IPAExtractionError(f"Unsafe archive entry detected: {info.filename}")
+                if stat.S_ISLNK(mode):
+                    raise IPAExtractionError(f"Symbolic links are not allowed in IPA archives: {info.filename}")
+                target = (root / member).resolve()
+                try:
+                    target.relative_to(root)
+                except ValueError as exc:
+                    raise IPAExtractionError(f"Unsafe archive entry detected: {info.filename}") from exc
+            zf.extractall(root)
 
         payload_dir = self._temp_dir / "Payload"
         if not payload_dir.is_dir():
