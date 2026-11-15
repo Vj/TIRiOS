@@ -27,6 +27,22 @@ class TrafficAttribution(str, Enum):
     APP_CONFIRMED = "App-confirmed"
 
 
+@dataclass
+class RuntimeNetworkEvent:
+    """A network syscall observed inside the instrumented target process."""
+
+    process_id: int
+    bundle_id: str
+    timestamp: float
+    destination_ip: str
+    destination_port: int
+    socket_fd: int | None = None
+    syscall: str = "connect"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
 class TLSAssessment(str, Enum):
     TLS_HANDSHAKE_OBSERVED = "TLS_HANDSHAKE_OBSERVED"
     PINNING_TEST_INCONCLUSIVE = "PINNING_TEST_INCONCLUSIVE"
