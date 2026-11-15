@@ -41,6 +41,7 @@ class TLSObservation:
     host: str
     observed_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     assessment: TLSAssessment = TLSAssessment.TLS_HANDSHAKE_OBSERVED
+    confidence: EvidenceConfidence = EvidenceConfidence.LOW
     attribution: TrafficAttribution = TrafficAttribution.UNATTRIBUTED
     bundle_id: str | None = None
     process_id: int | None = None
@@ -57,6 +58,7 @@ class TLSObservation:
     def to_dict(self) -> Dict[str, Any]:
         data = asdict(self)
         data["assessment"] = self.assessment.value
+        data["confidence"] = self.confidence.value
         data["attribution"] = self.attribution.value
         return data
 
