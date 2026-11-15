@@ -31,6 +31,11 @@ if (ObjC.available) {
     };
 
     const connectPtr = Module.findExportByName('libSystem.B.dylib', 'connect');
+    const getSockNamePtr = Module.findExportByName('libSystem.B.dylib', 'getsockname');
+    const getSockName = getSockNamePtr
+        ? new NativeFunction(getSockNamePtr, 'int', ['int', 'pointer', 'pointer'])
+        : null;
+
     if (connectPtr) {
         Interceptor.attach(connectPtr, {
             onEnter(args) {
@@ -39,7 +44,7 @@ if (ObjC.available) {
                     const length = args[2].toInt32();
                     if (sockaddr.isNull() || length < 8) return;
 
-                    const family = sockaddr.readU8();
+                    const family = sockaddr.add(1).readU8();
                     const bytes = bytesAt(sockaddr, Math.min(length, 28));
                     let destinationIp = '';
                     let destinationPort = 0;
@@ -56,6 +61,25 @@ if (ObjC.available) {
                         return;
                     }
 
+                    let localIp = '';
+                    let localPort = 0;
+                    if (getSockName) {
+                        const localSockaddr = Memory.alloc(128);
+                        const localLength = Memory.alloc(4);
+                        localLength.writeU32(128);
+                        if (getSockName(args[0].toInt32(), localSockaddr, localLength) === 0) {
+                            const localBytes = bytesAt(localSockaddr, Math.min(localLength.readU32(), 28));
+                            const localFamily = localSockaddr.add(1).readU8();
+                            if (localFamily === 2 && localBytes.length >= 8) {
+                                localPort = (localBytes[2] << 8) | localBytes[3];
+                                localIp = ipv4(localBytes);
+                            } else if (localFamily === 30 && localBytes.length >= 24) {
+                                localPort = (localBytes[2] << 8) | localBytes[3];
+                                localIp = ipv6(localBytes);
+                            }
+                        }
+                    }
+
                     send({
                         category: 'TIR_NETWORK_EVENT',
                         syscall: 'connect',
@@ -63,6 +87,8 @@ if (ObjC.available) {
                         bundle_id: bundleIdentifier(),
                         timestamp: Date.now() / 1000.0,
                         socket_fd: args[0].toInt32(),
+                        local_ip: localIp,
+                        local_port: localPort,
                         destination_ip: destinationIp,
                         destination_port: destinationPort
                     });
