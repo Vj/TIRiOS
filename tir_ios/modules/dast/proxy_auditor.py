@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 QUERY_LEAK_PATTERNS: Dict[str, Tuple[re.Pattern[str], Severity | None]] = {
     "JWT Token in URL Query": (
-        re.compile(r"\\beyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\b"),
+        re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b"),
         Severity.HIGH,
     ),
     "Secret / Token Parameter in URL Query": (
@@ -29,7 +29,7 @@ QUERY_LEAK_PATTERNS: Dict[str, Tuple[re.Pattern[str], Severity | None]] = {
         Severity.MEDIUM,
     ),
     "Email / PII in URL Query": (
-        re.compile(r"\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b"),
+        re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"),
         Severity.LOW,
     ),
 }
@@ -127,6 +127,7 @@ class ProxyTrafficAuditor:
             and baseline_request_succeeded
             and proxy_certificate_trusted
             and mismatch_request_succeeded
+            and attribution is TrafficAttribution.APP_CONFIRMED
         )
 
         if verified_bypass:
