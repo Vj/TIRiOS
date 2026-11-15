@@ -34,7 +34,7 @@ CRYPTO_PATTERNS = {
     "SHA-1": re.compile(r"\b(?:CC_SHA1|Insecure\.SHA1|CommonCrypto\.SHA1)\b"),
     "DES / 3DES / RC4": re.compile(r"\b(?:kCCAlgorithmDES|kCCAlgorithm3DES|kCCAlgorithmRC4)\b"),
     "ECB mode": re.compile(r"\b(?:kCCOptionECBMode|\.ecb)\b", re.I),
-    "Non-cryptographic random": re.compile(r"\b(?:arc4random(?:_uniform)?|rand|random)\s*\("),
+    "Non-cryptographic random": re.compile(r"\b(?:rand|random)\s*\("),
 }
 OAUTH_MARKERS = re.compile(r"(?i)\b(?:ASAuthorization|ASWebAuthenticationSession|oauth2?|openid|code_verifier|code_challenge|redirect_uri)\b")
 STATE_VALIDATION = re.compile(r"(?i)(?:state\s*==|state\s*!=|validate\w*state|guard\s+.*state)")
@@ -158,9 +158,8 @@ class SASTExpansion:
                         schemes.append(scheme)
         if not schemes:
             return []
-        associated = self.info_plist.get("com.apple.developer.associated-domains", [])
         locations = [str(p) for p in files if re.search(r"(?i)(onOpenURL|openURLContexts|application\(.*open|scene\(.*openURLContexts|continueUserActivity)", self._read(p))]
-        evidence = f"Registered custom schemes: {', '.join(schemes)}. Associated Domains present in Info.plist: {bool(associated)}. URL handler source files: {locations[:8] or 'not found in scanned source'}."
+        evidence = f"Registered custom schemes: {', '.join(schemes)}. Associated Domains is a signed entitlement and must be checked in signed entitlements, not Info.plist. URL handler source files: {locations[:8] or 'not found in scanned source'}."
         return [self.registry.build_finding(
             "TIR-IOS-SAST-033", f"Payload/{self.app_dir.name}/Info.plist -> CFBundleURLTypes",
             evidence + " Custom schemes can be claimed by another installed app; this finding requests handler review and does not assert an exploitable issue.",
@@ -171,6 +170,8 @@ class SASTExpansion:
         for path in files:
             content = self._read(path)
             for label, pattern in CRYPTO_PATTERNS.items():
+                if label == "Non-cryptographic random" and not re.search(r"(?i)\\b(?:crypto|encrypt|decrypt|cipher|secret|private.?key|nonce|initialization.?vector|iv)\\b", content):
+                    continue
                 for match in pattern.finditer(content):
                     line = content.count("\n", 0, match.start()) + 1
                     matches.append(f"{path}:{line}: {label} ({match.group(0)})")
