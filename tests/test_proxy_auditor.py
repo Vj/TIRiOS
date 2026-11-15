@@ -54,6 +54,7 @@ def test_rejected_mismatched_pin_is_recorded_as_enforced_not_vulnerable():
         proxy_certificate_trusted=True,
         mismatch_request_succeeded=False,
         attribution=TrafficAttribution.APP_CONFIRMED,
+        attribution_method="socket_tuple",
         bundle_id="com.example.app",
         process_id=1234,
     )
