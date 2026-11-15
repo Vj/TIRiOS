@@ -9,6 +9,9 @@ on:
       - "**/*.m"
       - "**/*.mm"
       - "**/*.h"
+      - "tir_ios/**"
+      - "profiles/**"
+      - ".github/workflows/tirios-security.yml"
 
 jobs:
   security-assessment:
@@ -30,8 +33,8 @@ jobs:
             echo "No IPA artifact in this checkout; skipping application assessment."
             exit 0
           fi
-          tir-ios assessment "$IPA" --profile profiles/ci-strict.json --output-dir tirios-artifacts
-          tir-ios ci tirios-artifacts/assessment.json --fail-on Medium
+          tir-ios assessment "$IPA" --profile tir_ios/profiles/ci-strict.json --output-dir tirios-artifacts
+          tir-ios ci tirios-artifacts/assessment.json --profile tir_ios/profiles/ci-strict.json
       - name: Upload assessment artifacts
         if: always()
         uses: actions/upload-artifact@v4
