@@ -131,6 +131,50 @@ def run_dast(
         sys.exit(1)
 
 
+
+@cli.command("dast-session")
+@click.argument("bundle_id", type=str)
+@click.option("--executable", required=True, help="CFBundleExecutable name for syslog filtering.")
+@click.option("--duration", default=60, show_default=True, help="Monitoring window in seconds.")
+@click.option("--udid", default=None, help="Target iOS device UDID (defaults to first USB device).")
+@click.option("--proxy-listen-host", default="0.0.0.0", show_default=True, help="Host/interface for mitmproxy to listen on.")
+@click.option("--proxy-port", default=8080, show_default=True, type=click.IntRange(1, 65535), help="mitmproxy listen port.")
+@click.option("--mitmdump", "mitmdump_path", default=None, help="Explicit path to the mitmdump executable.")
+@click.option("-o", "--output", type=click.Path(path_type=Path), default=Path("tirios_dast_session.json"), show_default=True, help="Consolidated session JSON report.")
+def run_dast_session(
+    bundle_id: str,
+    executable: str,
+    duration: int,
+    udid: str | None,
+    proxy_listen_host: str,
+    proxy_port: int,
+    mitmdump_path: str | None,
+    output: Path,
+) -> None:
+    """Run coordinated Frida, syslog, sandbox, resilience and proxy DAST collection."""
+    try:
+        from tir_ios.modules.dast.session_orchestrator import DASTSessionOrchestrator
+        click.echo("[*] Starting unified DAST session. Ensure the iPhone HTTP proxy points to this host.")
+        orchestrator = DASTSessionOrchestrator(
+            bundle_id=bundle_id,
+            executable=executable,
+            udid=udid,
+            output=output,
+            duration=duration,
+            proxy_host=proxy_listen_host,
+            proxy_port=proxy_port,
+            mitmdump_path=mitmdump_path,
+        )
+        payload = orchestrator.run()
+        click.echo(
+            f"[+] Session complete: {len(payload['findings'])} findings, "
+            f"{len(payload['proxy_observations'])} TLS observations. Report: {output}"
+        )
+    except Exception as exc:
+        click.echo(f"[!] Unified DAST session failed: {exc}", err=True)
+        sys.exit(1)
+
+
 @cli.command("merge")
 @click.argument("report_files", nargs=-1, required=True, type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option("-o", "--output", type=click.Path(path_type=Path), default=None, help="Merged JSON output path.")
