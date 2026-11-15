@@ -130,3 +130,21 @@ def test_proxy_accepts_app_confirmed_only_for_exact_socket_tuple():
 
     assert auditor.apply_traffic_correlation("flow-3", correlation)
     assert auditor.get_observations()[0].attribution is TrafficAttribution.APP_CONFIRMED
+
+
+def test_proxy_flow_helper_uses_client_peer_tuple_for_process_attribution():
+    from types import SimpleNamespace
+    from tir_ios.modules.dast.proxy_auditor import ProxyTrafficAuditor
+
+    auditor = ProxyTrafficAuditor()
+    auditor._observations.append(TLSObservation(host="api.example.test", connection_id="conn-9"))
+    flow = SimpleNamespace(
+        client_conn=SimpleNamespace(id="conn-9", peername=("192.0.2.44", 50123)),
+        server_conn=SimpleNamespace(peername=("203.0.113.10", 443)),
+        request=SimpleNamespace(timestamp_start=1000.0),
+    )
+
+    result = auditor.correlate_flow(flow, [event()], TrafficCorrelator())
+
+    assert result.attribution is TrafficAttribution.APP_CONFIRMED
+    assert auditor.get_observations()[0].attribution is TrafficAttribution.APP_CONFIRMED
