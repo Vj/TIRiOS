@@ -181,8 +181,8 @@ class ProxyTrafficAuditor:
     def apply_traffic_correlation(self, connection_id: str, correlation: object) -> bool:
         """Attach conservative runtime attribution to a previously observed TLS connection.
 
-        Correlation by endpoint/time is intentionally APP_CORRELATED at most.
-        This method never upgrades an observation to APP_CONFIRMED.
+        Destination/time-only matches remain APP_CORRELATED. APP_CONFIRMED is
+        accepted only for a unique exact socket-tuple match with PID and bundle ID.
         """
         for observation in self._observations:
             if observation.connection_id != str(connection_id):
