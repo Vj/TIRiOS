@@ -8,6 +8,7 @@ from tir_ios.core.models import ScanReport
 from tir_ios.modules.sast.macho_inspector import MachOInspector
 from tir_ios.modules.sast.plist_auditor import PlistAuditor
 from tir_ios.modules.sast.secrets_scan import SecretsScanner
+from tir_ios.modules.sast.sast_expansion import SASTExpansion
 from tir_ios.reporting.merger import merge_scan_reports
 
 
@@ -21,7 +22,10 @@ def cli() -> None:
 @click.option("-o", "--output", type=click.Path(path_type=Path), default=None, help="Output JSON report path.")
 @click.option("--html", "html_output", type=click.Path(path_type=Path), default=None, help="Output HTML report path.")
 @click.option("--pdf", "pdf_output", type=click.Path(path_type=Path), default=None, help="Output PDF report path.")
-def scan_ipa(ipa_path: Path, output: Path | None, html_output: Path | None, pdf_output: Path | None) -> None:
+@click.option("--source-dir", type=click.Path(exists=True, file_okay=False, path_type=Path), default=None,
+              help="Optional Swift/Objective-C source tree for source-level SAST (usually not present in an IPA).")
+def scan_ipa(ipa_path: Path, output: Path | None, html_output: Path | None, pdf_output: Path | None,
+             source_dir: Path | None) -> None:
     """Run static security checks (SAST) against an iOS .ipa package."""
     try:
         with IPAWorkspace(ipa_path) as ws:
@@ -45,6 +49,9 @@ def scan_ipa(ipa_path: Path, output: Path | None, html_output: Path | None, pdf_
             for finding in plist_auditor.run_all():
                 report.add_finding(finding)
             for finding in secrets_scanner.run_all():
+                report.add_finding(finding)
+            expansion = SASTExpansion(ws.app_dir, info, source_dir=source_dir)
+            for finding in expansion.run_all():
                 report.add_finding(finding)
 
             if output:
