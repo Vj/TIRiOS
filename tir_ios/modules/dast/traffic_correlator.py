@@ -1,7 +1,7 @@
 """Conservative correlation between Frida socket events and proxy flows.
 
-Destination/time matching is useful evidence, but it is not a cryptographic or
-unique flow identifier. This module therefore never returns APP_CONFIRMED.
+An exact local socket tuple can identify the app process that owns a proxy
+connection. Destination/time matching is weaker and returns APP_CORRELATED only.
 """
 from dataclasses import dataclass
 from ipaddress import ip_address
@@ -43,6 +43,13 @@ class TrafficCorrelator:
     def _normalize_ip(value: str) -> str:
         return str(ip_address(value))
 
+    @classmethod
+    def _safe_ip_matches(cls, candidate: str, expected: str) -> bool:
+        try:
+            return cls._normalize_ip(candidate) == expected
+        except ValueError:
+            return False
+
     def correlate(
         self,
         proxy: ProxyEndpoint,
@@ -50,15 +57,6 @@ class TrafficCorrelator:
         *,
         device_level_capture: bool = False,
     ) -> TrafficCorrelation:
-        try:
-            proxy_ip = self._normalize_ip(proxy.destination_ip)
-        except ValueError:
-            return TrafficCorrelation(
-                TrafficAttribution.DEVICE_LEVEL if device_level_capture else TrafficAttribution.UNATTRIBUTED,
-                connection_id=proxy.connection_id,
-                rationale="Proxy destination is not a valid IP address.",
-            )
-
         events = list(runtime_events)
         # An exact local socket tuple maps a process-owned TCP socket to the
         # peer endpoint accepted by mitmproxy. This is stronger than timing.
@@ -70,8 +68,9 @@ class TrafficCorrelator:
             exact = [
                 event for event in events
                 if event.local_ip and event.local_port is not None
-                and self._normalize_ip(event.local_ip) == client_ip
+                and self._safe_ip_matches(event.local_ip, client_ip)
                 and event.local_port == proxy.client_port
+                and abs(event.timestamp - proxy.timestamp) <= self.time_window_seconds
             ]
             if len(exact) == 1:
                 event = exact[0]
@@ -92,6 +91,15 @@ class TrafficCorrelator:
                     method="ambiguous_socket_tuple",
                     rationale="Multiple runtime sockets matched the client tuple; app attribution is ambiguous.",
                 )
+
+        try:
+            proxy_ip = self._normalize_ip(proxy.destination_ip)
+        except ValueError:
+            return TrafficCorrelation(
+                TrafficAttribution.DEVICE_LEVEL if device_level_capture else TrafficAttribution.UNATTRIBUTED,
+                connection_id=proxy.connection_id,
+                rationale="Proxy destination is not a valid IP address.",
+            )
 
         candidates = []
         for event in events:
