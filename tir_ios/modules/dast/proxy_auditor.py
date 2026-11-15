@@ -15,6 +15,7 @@ from tir_ios.core.models import (
     TrafficAttribution,
 )
 from tir_ios.core.rule_registry import RuleRegistry
+from tir_ios.modules.dast.traffic_correlator import ProxyEndpoint
 
 
 logger = logging.getLogger(__name__)
@@ -197,6 +198,33 @@ class ProxyTrafficAuditor:
             return True
         return False
 
+    def correlate_flow(self, flow: object, runtime_events: object, correlator: object, *, device_level_capture: bool = False) -> object:
+        """Correlate a mitmproxy flow with Frida events using its client socket tuple."""
+        client_conn = getattr(flow, "client_conn", None)
+        server_conn = getattr(flow, "server_conn", None)
+        peername = getattr(client_conn, "peername", None)
+        if not peername or len(peername) < 2:
+            return None
+        server_peer = getattr(server_conn, "peername", None)
+        request = getattr(flow, "request", None)
+        timestamp = getattr(request, "timestamp_start", None)
+        if timestamp is None:
+            timestamp = datetime.now(timezone.utc).timestamp()
+        destination_ip = str(server_peer[0]) if server_peer and len(server_peer) >= 2 else "0.0.0.0"
+        destination_port = int(server_peer[1]) if server_peer and len(server_peer) >= 2 else 0
+        endpoint = ProxyEndpoint(
+            destination_ip=destination_ip,
+            destination_port=destination_port,
+            timestamp=float(timestamp),
+            connection_id=str(getattr(client_conn, "id", "")) or None,
+            client_ip=str(peername[0]),
+            client_port=int(peername[1]),
+        )
+        result = correlator.correlate(endpoint, runtime_events, device_level_capture=device_level_capture)
+        connection_id = getattr(client_conn, "id", None)
+        if connection_id is not None:
+            self.apply_traffic_correlation(str(connection_id), result)
+        return result
     def request(self, flow: object) -> None:
         """Inspect outgoing HTTP(S) request URLs and query parameters."""
         try:
