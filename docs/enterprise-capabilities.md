@@ -1,31 +1,55 @@
 # Enterprise capabilities
 
-This phase adds profile-driven assessments, local content-addressed evidence storage, report comparison, CI severity gating and profile discovery.
+TIRiOS enterprise workflows are exposed as first-class CLI commands and can run from a local workstation or a CI runner.
 
-## Commands
+## Profile-driven assessment
 
-- tir-ios profiles list — list bundled JSON profiles.
-- tir-ios assessment app.ipa --profile profiles/enterprise-standard.json --source-dir ./Source --output-dir ./engagement-001 — run SAST and generate JSON plus configured HTML/PDF reports and evidence objects.
-- tir-ios compare baseline.json current.json --output delta.json — classify new, resolved and persistent findings.
-- tir-ios evidence add report.json --store ./evidence --assessment-id ENG-001 and tir-ios evidence verify --store ./evidence — store and verify SHA-256-addressed artifacts.
-- tir-ios ci report.json --fail-on High — return exit code 1 when a finding meets or exceeds the configured severity.
+```bash
+tir-ios profiles list
+tir-ios assessment TargetApp.ipa --profile profiles/enterprise-standard.json --source-dir ./MyApp --output-dir ./engagement-001
+```
 
-## CI/CD
+A profile controls SAST/DAST phases, optional HTML/PDF generation, evidence collection, source scanning, DAST duration and the default CI severity threshold. The assessment command runs bundle-level SAST checks and, when enabled, starts the existing device-backed DAST orchestrator. For DAST profiles, supply `--bundle-id` and `--executable`; use `--udid` to select a device. DAST requires optional DAST dependencies, an authorized paired device, Frida setup and a test-device proxy configured for the host. Partial DAST session evidence is retained if collection fails.
 
-A typical pipeline runs tir-ios assessment, archives JSON/HTML/PDF and evidence outputs, then invokes tir-ios ci assessment.json --fail-on High. GitHub Actions and other runners can consume the process exit code without a hosted TIRiOS service.
+```bash
+tir-ios assessment TargetApp.ipa --profile profiles/enterprise-standard.json --bundle-id com.example.app --executable ExampleApp --udid DEVICE_UDID
+```
 
-## Evidence integrity and retention
+## Evidence repository
 
-Objects are stored under objects/<first-two-hash-chars>/<sha256>. The JSONL manifest records assessment ID, kind, original filename, size, timestamp and digest. Verification recomputes each digest. This local mechanism is not WORM storage and does not provide access control, encryption at rest, tenant isolation, legal retention or an immutable audit log. Production deployments should use access-controlled, backed-up storage and organization-managed retention and key-management policies.
+Artifacts are stored by SHA-256 under `objects/<first-two-hash-chars>/<sha256>`. The JSONL manifest records assessment ID, artifact kind/name, size, timestamp and digest. Repeated identical artifacts reuse the same content object while retaining separate manifest entries.
 
-## Orchestration scope
+```bash
+tir-ios evidence add assessment.json --store ./evidence --assessment-id ENG-001
+tir-ios evidence verify --store ./evidence
+```
 
-The assessment command orchestrates IPA-based SAST and report/evidence publication. DAST remains an explicit device-backed tir-ios dast-session workflow. A profile that enables DAST is rejected rather than silently producing a partial assessment. Run DAST on an authorized device, then merge its JSON with SAST using tir-ios merge before comparison and CI gating. Cross-stage scheduling and durable session state are future work.
+Verification recomputes each object's digest and rejects unsafe manifest paths. This local mechanism is an integrity aid, not WORM storage: it does not provide access control, tenant isolation, encryption at rest, immutable audit logs, backups or legal retention. Production deployments should use organization-managed storage and key/retention controls.
 
-## Comparison semantics
+## Advanced reports
 
-The first comparison version fingerprints a finding by finding ID, location and evidence. Changes to evidence or location can therefore appear as a resolved plus a new finding; this conservative approach avoids incorrectly claiming continuity. Risk acceptance, SLA ageing and trend analytics are not yet implemented.
+The assessment command emits normalized JSON and can render executive/technical HTML and PDF reports using the existing Jinja2/WeasyPrint engine. Install the optional reporting extra when either format is enabled: `python -m pip install -e ".[reporting]"`. Profiles used in minimal CI environments can disable HTML/PDF output and avoid native WeasyPrint dependencies.
 
-## Profiles
+## Assessment comparison
 
-Profiles are JSON configuration validated for supported keys, severity thresholds and positive DAST duration. Bundled examples are enterprise-standard.json and ci-strict.json. The settings map is reserved for organization metadata and does not yet alter scanner internals.
+```bash
+tir-ios compare baseline.json current.json --output delta.json
+```
+
+Findings are matched by rule ID and location. Comparison classifies new, resolved, changed (evidence/severity/metadata changed) and persistent findings. If multiple findings share the same rule ID and location, this initial identity model may group them; treat deltas as triage assistance rather than a replacement for analyst review.
+
+## CI/CD integration
+
+```bash
+tir-ios assessment TargetApp.ipa --profile profiles/ci-strict.json --output-dir tirios-artifacts
+tir-ios ci tirios-artifacts/assessment.json --profile profiles/ci-strict.json
+```
+
+The CI command returns exit code 1 when any finding meets or exceeds the selected threshold. `--fail-on` overrides the profile threshold. A sample GitHub Actions workflow is provided at `.github/workflows/tirios-security.yml`; it runs when an IPA is present in the checked-out repository and otherwise reports a skip. For other CI providers, invoke the same commands and archive the output directory as build artifacts.
+
+## Enterprise profile examples
+
+- `profiles/enterprise-standard.json`: SAST, HTML/PDF, evidence; High severity gate.
+- `profiles/ci-strict.json`: SAST, evidence, no HTML/PDF dependency; Medium severity gate.
+
+Profiles are validated for supported keys and basic value types. Organization-specific settings are preserved as metadata but do not currently alter individual scanner rules.
