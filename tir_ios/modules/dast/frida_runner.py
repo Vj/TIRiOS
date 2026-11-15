@@ -51,6 +51,7 @@ class FridaRuntimeAuditor:
         self.udid = udid
         self.agent_path = agent_path or (Path(__file__).parent / "agents" / "audit_agent.js")
         self._findings: List[Finding] = []
+        self._network_events = []
         self._seen: Set[Tuple[str, str]] = set()
         self._session: Optional[frida.core.Session] = None
         self._script: Optional[frida.core.Script] = None
@@ -72,6 +73,11 @@ class FridaRuntimeAuditor:
             self._script.on("message", self._on_message)
             self._script.load()
 
+    @property
+    def network_events(self):
+        """Return a snapshot of network syscall events captured by Frida."""
+        return list(self._network_events)
+
     def stop(self) -> List[Finding]:
         if self._script:
             try:
@@ -89,6 +95,25 @@ class FridaRuntimeAuditor:
         if message.get("type") != "send":
             return
         payload = message.get("payload", {})
+        if payload.get("category") == "TIR_NETWORK_EVENT":
+            try:
+                from tir_ios.core.models import RuntimeNetworkEvent
+
+                event = RuntimeNetworkEvent(
+                    process_id=int(payload["process_id"]),
+                    bundle_id=str(payload["bundle_id"]),
+                    timestamp=float(payload["timestamp"]),
+                    destination_ip=str(payload["destination_ip"]),
+                    destination_port=int(payload["destination_port"]),
+                    socket_fd=int(payload["socket_fd"]) if payload.get("socket_fd") is not None else None,
+                    syscall=str(payload.get("syscall", "connect")),
+                )
+                if event.bundle_id == self.bundle_id:
+                    self._network_events.append(event)
+            except (KeyError, TypeError, ValueError):
+                return
+            return
+
         if payload.get("category") != "TIR_DAST_EVENT":
             return
 
