@@ -32,6 +32,7 @@ def test_verified_pin_mismatch_bypass_creates_finding():
         proxy_certificate_trusted=True,
         mismatch_request_succeeded=True,
         attribution=TrafficAttribution.APP_CONFIRMED,
+        attribution_method="socket_tuple",
         bundle_id="com.example.app",
         process_id=1234,
         evidence="Controlled test request returned HTTP 200.",
@@ -135,6 +136,28 @@ def test_malformed_spki_fingerprints_are_inconclusive():
         proxy_certificate_trusted=True,
         mismatch_request_succeeded=True,
         attribution=TrafficAttribution.APP_CONFIRMED,
+        attribution_method="socket_tuple",
+        bundle_id="com.example.app",
+        process_id=1234,
+    )
+
+    assert observation.assessment is TLSAssessment.PINNING_TEST_INCONCLUSIVE
+    assert auditor.get_findings() == []
+
+
+
+def test_app_confirmed_label_without_socket_tuple_provenance_is_inconclusive():
+    auditor = ProxyTrafficAuditor()
+    observation = auditor.record_pinning_test(
+        host="api.example.test",
+        expected_spki_sha256="aa" * 32,
+        observed_spki_sha256="bb" * 32,
+        baseline_request_succeeded=True,
+        proxy_certificate_trusted=True,
+        mismatch_request_succeeded=True,
+        attribution=TrafficAttribution.APP_CONFIRMED,
+        bundle_id="com.example.app",
+        process_id=1234,
     )
 
     assert observation.assessment is TLSAssessment.PINNING_TEST_INCONCLUSIVE
