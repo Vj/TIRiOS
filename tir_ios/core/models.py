@@ -37,6 +37,8 @@ class RuntimeNetworkEvent:
     destination_ip: str
     destination_port: int
     socket_fd: int | None = None
+    local_ip: str | None = None
+    local_port: int | None = None
     syscall: str = "connect"
 
     def to_dict(self) -> Dict[str, Any]:
