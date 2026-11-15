@@ -16,6 +16,8 @@ class ProxyEndpoint:
     destination_port: int
     timestamp: float
     connection_id: str | None = None
+    client_ip: str | None = None
+    client_port: int | None = None
 
 
 @dataclass(frozen=True)
@@ -25,6 +27,7 @@ class TrafficCorrelation:
     process_id: int | None = None
     matched_event_count: int = 0
     connection_id: str | None = None
+    method: str = "none"
     rationale: str = ""
 
 
@@ -56,8 +59,42 @@ class TrafficCorrelator:
                 rationale="Proxy destination is not a valid IP address.",
             )
 
+        events = list(runtime_events)
+        # An exact local socket tuple maps a process-owned TCP socket to the
+        # peer endpoint accepted by mitmproxy. This is stronger than timing.
+        if proxy.client_ip and proxy.client_port is not None:
+            try:
+                client_ip = self._normalize_ip(proxy.client_ip)
+            except ValueError:
+                client_ip = ""
+            exact = [
+                event for event in events
+                if event.local_ip and event.local_port is not None
+                and self._normalize_ip(event.local_ip) == client_ip
+                and event.local_port == proxy.client_port
+            ]
+            if len(exact) == 1:
+                event = exact[0]
+                return TrafficCorrelation(
+                    attribution=TrafficAttribution.APP_CONFIRMED,
+                    bundle_id=event.bundle_id,
+                    process_id=event.process_id,
+                    matched_event_count=1,
+                    connection_id=proxy.connection_id,
+                    method="socket_tuple",
+                    rationale="Unique exact local IP:port match between the Frida-observed app socket and mitmproxy client peer endpoint.",
+                )
+            if len(exact) > 1:
+                return TrafficCorrelation(
+                    attribution=TrafficAttribution.UNATTRIBUTED,
+                    matched_event_count=len(exact),
+                    connection_id=proxy.connection_id,
+                    method="ambiguous_socket_tuple",
+                    rationale="Multiple runtime sockets matched the client tuple; app attribution is ambiguous.",
+                )
+
         candidates = []
-        for event in runtime_events:
+        for event in events:
             try:
                 event_ip = self._normalize_ip(event.destination_ip)
             except ValueError:
@@ -77,6 +114,7 @@ class TrafficCorrelator:
                 process_id=event.process_id,
                 matched_event_count=1,
                 connection_id=proxy.connection_id,
+                method="destination_time",
                 rationale=(
                     "Exactly one target-process connect() event matched destination IP, "
                     "port, and time window. This is correlation, not definitive socket-to-flow identity."
@@ -88,6 +126,7 @@ class TrafficCorrelator:
                 attribution=TrafficAttribution.DEVICE_LEVEL if device_level_capture else TrafficAttribution.UNATTRIBUTED,
                 matched_event_count=len(candidates),
                 connection_id=proxy.connection_id,
+                method="ambiguous_destination_time",
                 rationale="Multiple runtime socket events matched; app attribution is ambiguous.",
             )
 
