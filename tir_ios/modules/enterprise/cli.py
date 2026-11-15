@@ -181,13 +181,25 @@ def register_enterprise_commands(cli_group):
 
     @cli_group.command("ci")
     @click.argument("report", type=click.Path(exists=True, dir_okay=False, path_type=Path))
-    @click.option("--fail-on", type=click.Choice(list(SEVERITY_RANK_NAMES)), default="High", show_default=True)
-    def ci(report, fail_on):
-        """Return non-zero when findings meet or exceed the severity threshold."""
-        passed, blockers = meets_failure_threshold(report, fail_on)
-        click.echo(f"{'PASS' if passed else 'FAIL'}: {len(blockers)} findings at or above {fail_on}")
+    @click.option("--profile", "profile_path", type=click.Path(exists=True, dir_okay=False, path_type=Path), default=None,
+                  help="Use the fail_on threshold from an assessment profile.")
+    @click.option("--fail-on", type=click.Choice(list(SEVERITY_RANK_NAMES)), default=None,
+                  help="Override the profile threshold (defaults to High without --profile).")
+    def ci(report, profile_path, fail_on):
+        """Return non-zero when findings meet or exceed the selected severity threshold."""
+        if profile_path:
+            try:
+                threshold = AssessmentProfile.load(profile_path).fail_on
+            except (ValueError, OSError, json.JSONDecodeError) as exc:
+                raise click.ClickException(f"Invalid assessment profile: {exc}") from exc
+        else:
+            threshold = "High"
+        threshold = fail_on or threshold
+        passed, blockers = meets_failure_threshold(report, threshold)
+        click.echo(f"{'PASS' if passed else 'FAIL'}: {len(blockers)} findings at or above {threshold}")
         if not passed:
             raise click.exceptions.Exit(1)
+
 
     @cli_group.group("profiles")
     def profiles():
