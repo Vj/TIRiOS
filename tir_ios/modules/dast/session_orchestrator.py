@@ -137,7 +137,13 @@ class DASTSessionOrchestrator:
                 resilience.start(spawn=False)
                 started["resilience"] = True
 
-                time.sleep(self.duration)
+                deadline = time.monotonic() + self.duration
+                while time.monotonic() < deadline:
+                    if proxy.poll() is not None:
+                        raise DASTSessionError(
+                            f"mitmdump exited during capture with code {proxy.returncode}"
+                        )
+                    time.sleep(min(0.25, max(0.0, deadline - time.monotonic())))
             except Exception as exc:
                 session_error = str(exc)
             finally:
