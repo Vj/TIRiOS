@@ -1,0 +1,13 @@
+{
+  "name": "enterprise-standard",
+  "description": "Balanced iOS application security assessment for enterprise delivery.",
+  "sast_enabled": true,
+  "dast_enabled": false,
+  "html_report": true,
+  "pdf_report": true,
+  "evidence_enabled": true,
+  "fail_on": "High",
+  "source_scan_enabled": true,
+  "dast_duration": 180,
+  "settings": {"include_informational": true, "evidence_hash": "sha256"}
+}
