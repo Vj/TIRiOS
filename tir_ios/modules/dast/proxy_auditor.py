@@ -185,7 +185,10 @@ class ProxyTrafficAuditor:
                 continue
             attribution = getattr(correlation, "attribution", TrafficAttribution.UNATTRIBUTED)
             if attribution is TrafficAttribution.APP_CONFIRMED:
-                attribution = TrafficAttribution.APP_CORRELATED
+                exact_tuple = getattr(correlation, "method", "") == "socket_tuple"
+                has_process_identity = bool(getattr(correlation, "bundle_id", None)) and getattr(correlation, "process_id", None) is not None
+                if not (exact_tuple and has_process_identity):
+                    attribution = TrafficAttribution.APP_CORRELATED
             observation.attribution = attribution
             observation.bundle_id = getattr(correlation, "bundle_id", None)
             observation.process_id = getattr(correlation, "process_id", None)
