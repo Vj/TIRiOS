@@ -123,18 +123,20 @@ class ProxyTrafficAuditor:
         observed = self._normalize_fingerprint(observed_spki_sha256)
         valid_sha256 = len(expected) == 64 and len(observed) == 64
         mismatch = bool(valid_sha256 and expected != observed)
-        verified_bypass = (
-            mismatch
-            and baseline_request_succeeded
-            and proxy_certificate_trusted
-            and mismatch_request_succeeded
-            and attribution is TrafficAttribution.APP_CONFIRMED
+        app_confirmed = (
+            attribution is TrafficAttribution.APP_CONFIRMED
+            and bool(bundle_id)
+            and process_id is not None
         )
+        verified_test_context = (
+            mismatch and baseline_request_succeeded and proxy_certificate_trusted and app_confirmed
+        )
+        verified_bypass = verified_test_context and mismatch_request_succeeded
 
         if verified_bypass:
             assessment = TLSAssessment.PINNING_BYPASS_VERIFIED
             confidence = EvidenceConfidence.VERIFIED
-        elif mismatch and baseline_request_succeeded and proxy_certificate_trusted and not mismatch_request_succeeded:
+        elif verified_test_context and not mismatch_request_succeeded:
             assessment = TLSAssessment.PINNING_ENFORCED
             confidence = EvidenceConfidence.HIGH
         else:
