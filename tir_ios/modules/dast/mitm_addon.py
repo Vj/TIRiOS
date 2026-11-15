@@ -6,8 +6,6 @@ import json
 import os
 from pathlib import Path
 
-from mitmproxy import ctx
-
 from tir_ios.core.models import RuntimeNetworkEvent
 from tir_ios.modules.dast.proxy_auditor import ProxyTrafficAuditor
 from tir_ios.modules.dast.traffic_correlator import TrafficCorrelator
@@ -20,6 +18,7 @@ class TIRiOSProxyAddon:
         self.auditor = ProxyTrafficAuditor()
         self.correlator = TrafficCorrelator()
         self._last_events = []
+        self._flush()
 
     def _runtime_events(self):
         try:
@@ -33,13 +32,26 @@ class TIRiOSProxyAddon:
 
     def tls_established_client(self, data):
         self.auditor.tls_established_client(data)
+        self._flush()
 
     def request(self, flow):
         self.auditor.correlate_flow(flow, self._runtime_events(), self.correlator)
         self.auditor.request(flow)
+        self._flush()
 
     def done(self):
-        self.auditor.export_findings(self.output_path)
+        self._flush()
+
+    def _flush(self):
+        self.output_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = self.output_path.with_suffix(self.output_path.suffix + ".tmp")
+        payload = {
+            "schema_version": "1.1.0",
+            "findings": [finding.to_dict() for finding in self.auditor.get_findings()],
+            "observations": [item.to_dict() for item in self.auditor.get_observations()],
+        }
+        temporary.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        temporary.replace(self.output_path)
 
 
 addons = [TIRiOSProxyAddon()]
