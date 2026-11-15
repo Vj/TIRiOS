@@ -107,6 +107,7 @@ class ProxyTrafficAuditor:
         proxy_certificate_trusted: bool,
         mismatch_request_succeeded: bool,
         attribution: TrafficAttribution = TrafficAttribution.UNATTRIBUTED,
+        attribution_method: str | None = None,
         bundle_id: str | None = None,
         process_id: int | None = None,
         connection_id: str | None = None,
@@ -128,6 +129,7 @@ class ProxyTrafficAuditor:
             attribution is TrafficAttribution.APP_CONFIRMED
             and bool(bundle_id)
             and process_id is not None
+            and attribution_method == "socket_tuple"
         )
         verified_test_context = (
             mismatch and baseline_request_succeeded and proxy_certificate_trusted and app_confirmed
@@ -149,6 +151,7 @@ class ProxyTrafficAuditor:
             assessment=assessment,
             confidence=confidence,
             attribution=attribution,
+            attribution_method=attribution_method,
             bundle_id=bundle_id,
             process_id=process_id,
             connection_id=connection_id,
@@ -191,6 +194,7 @@ class ProxyTrafficAuditor:
                 if not (exact_tuple and has_process_identity):
                     attribution = TrafficAttribution.APP_CORRELATED
             observation.attribution = attribution
+            observation.attribution_method = getattr(correlation, "method", None)
             observation.bundle_id = getattr(correlation, "bundle_id", None)
             observation.process_id = getattr(correlation, "process_id", None)
             rationale = getattr(correlation, "rationale", "")
