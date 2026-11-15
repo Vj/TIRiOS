@@ -61,6 +61,7 @@ class TLSObservation:
     assessment: TLSAssessment = TLSAssessment.TLS_HANDSHAKE_OBSERVED
     confidence: EvidenceConfidence = EvidenceConfidence.LOW
     attribution: TrafficAttribution = TrafficAttribution.UNATTRIBUTED
+    attribution_method: str | None = None
     bundle_id: str | None = None
     process_id: int | None = None
     connection_id: str | None = None
