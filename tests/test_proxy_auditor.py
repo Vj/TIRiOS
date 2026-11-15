@@ -52,6 +52,9 @@ def test_rejected_mismatched_pin_is_recorded_as_enforced_not_vulnerable():
         baseline_request_succeeded=True,
         proxy_certificate_trusted=True,
         mismatch_request_succeeded=False,
+        attribution=TrafficAttribution.APP_CONFIRMED,
+        bundle_id="com.example.app",
+        process_id=1234,
     )
 
     assert observation.assessment is TLSAssessment.PINNING_ENFORCED
