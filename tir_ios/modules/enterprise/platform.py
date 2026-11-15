@@ -52,8 +52,8 @@ class AssessmentProfile:
         if "settings" in data and not isinstance(data["settings"], dict):
             raise ValueError("settings must be a JSON object")
         profile = cls(**data)
-        if profile.fail_on not in SEVERITY_RANK:
-            raise ValueError(f"fail_on must be one of: {', '.join(SEVERITY_RANK)}")
+        if not isinstance(profile.fail_on, str) or profile.fail_on not in SEVERITY_RANK:
+            raise ValueError("fail_on must be one of: " + ", ".join(SEVERITY_RANK))
         if not isinstance(profile.dast_duration, int) or isinstance(profile.dast_duration, bool) or profile.dast_duration <= 0:
             raise ValueError("dast_duration must be a positive integer")
         if not profile.sast_enabled and not profile.dast_enabled:
