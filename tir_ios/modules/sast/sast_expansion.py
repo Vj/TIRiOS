@@ -170,7 +170,7 @@ class SASTExpansion:
         for path in files:
             content = self._read(path)
             for label, pattern in CRYPTO_PATTERNS.items():
-                if label == "Non-cryptographic random" and not re.search(r"(?i)\\b(?:crypto|encrypt|decrypt|cipher|secret|private.?key|nonce|initialization.?vector|iv)\\b", content):
+                if label == "Non-cryptographic random" and not re.search(r"(?i)\b(?:crypto|encrypt|decrypt|cipher|secret|private.?key|nonce|initialization.?vector|iv)\b", content):
                     continue
                 for match in pattern.finditer(content):
                     line = content.count("\n", 0, match.start()) + 1
