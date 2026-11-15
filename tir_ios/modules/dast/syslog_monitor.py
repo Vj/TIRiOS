@@ -9,7 +9,7 @@ from tir_ios.core.rule_registry import RuleRegistry
 
 LOG_LEAK_PATTERNS: Dict[str, Tuple[re.Pattern[str], Severity | None]] = {
     "Bearer / Authorization Token in Logs": (
-        re.compile(r"(?i)(?:authorization|bearer)\s*[:=]\s*['\"]?[A-Za-z0-9._\-]{16,}"),
+        re.compile(r"(?i)(?:authorization\s*[:=]\s*(?:bearer\s+)?|bearer\s+)['\"]?[A-Za-z0-9._\-]{16,}"),
         Severity.HIGH,
     ),
     "JWT Token Written to Syslog": (
