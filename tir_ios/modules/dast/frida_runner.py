@@ -55,23 +55,30 @@ class FridaRuntimeAuditor:
         self._seen: Set[Tuple[str, str]] = set()
         self._session: Optional[frida.core.Session] = None
         self._script: Optional[frida.core.Script] = None
+        self._network_script: Optional[frida.core.Script] = None
 
     def start(self, spawn: bool = True) -> None:
         device = frida.get_device(self.udid) if self.udid else frida.get_usb_device(timeout=5)
         agent_source = self.agent_path.read_text(encoding="utf-8")
+        network_agent_path = self.agent_path.parent / "network_attribution_agent.js"
+        network_source = network_agent_path.read_text(encoding="utf-8")
 
         if spawn:
             pid = device.spawn([self.bundle_id])
             self._session = device.attach(pid)
-            self._script = self._session.create_script(agent_source)
-            self._script.on("message", self._on_message)
-            self._script.load()
-            device.resume(pid)
         else:
             self._session = device.attach(self.bundle_id)
-            self._script = self._session.create_script(agent_source)
-            self._script.on("message", self._on_message)
-            self._script.load()
+
+        self._script = self._session.create_script(agent_source)
+        self._script.on("message", self._on_message)
+        self._script.load()
+
+        self._network_script = self._session.create_script(network_source)
+        self._network_script.on("message", self._on_message)
+        self._network_script.load()
+
+        if spawn:
+            device.resume(pid)
 
     @property
     def network_events(self):
@@ -82,6 +89,11 @@ class FridaRuntimeAuditor:
         if self._script:
             try:
                 self._script.unload()
+            except frida.InvalidOperationError:
+                pass
+        if self._network_script:
+            try:
+                self._network_script.unload()
             except frida.InvalidOperationError:
                 pass
         if self._session:
