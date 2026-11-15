@@ -174,6 +174,26 @@ class ProxyTrafficAuditor:
             )
         return observation
 
+    def apply_traffic_correlation(self, connection_id: str, correlation: object) -> bool:
+        """Attach conservative runtime attribution to a previously observed TLS connection.
+
+        Correlation by endpoint/time is intentionally APP_CORRELATED at most.
+        This method never upgrades an observation to APP_CONFIRMED.
+        """
+        for observation in self._observations:
+            if observation.connection_id != str(connection_id):
+                continue
+            attribution = getattr(correlation, "attribution", TrafficAttribution.UNATTRIBUTED)
+            if attribution is TrafficAttribution.APP_CONFIRMED:
+                attribution = TrafficAttribution.APP_CORRELATED
+            observation.attribution = attribution
+            observation.bundle_id = getattr(correlation, "bundle_id", None)
+            observation.process_id = getattr(correlation, "process_id", None)
+            rationale = getattr(correlation, "rationale", "")
+            observation.notes = "; ".join(part for part in (observation.notes, rationale) if part)
+            return True
+        return False
+
     def request(self, flow: object) -> None:
         """Inspect outgoing HTTP(S) request URLs and query parameters."""
         try:
