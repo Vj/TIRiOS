@@ -200,5 +200,9 @@ def merge_reports_cmd(report_files: tuple[Path, ...], output: Path | None, pdf_o
         click.echo(merged.to_json())
 
 
+from tir_ios.modules.enterprise.cli import register_enterprise_commands
+register_enterprise_commands(cli)
+
+
 if __name__ == "__main__":
     cli()
