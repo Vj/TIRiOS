@@ -60,8 +60,6 @@ def register_enterprise_commands(cli_group):
     def assessment(ipa_path, profile_path, source_dir, bundle_id, executable, udid,
                    proxy_port, mitmdump_path, output_dir, assessment_id):
         """Run a profile-driven SAST/DAST assessment and publish reports/evidence."""
-        from tir_ios.reporting.pdf_generator import PDFReportGenerator
-
         try:
             profile = AssessmentProfile.load(profile_path)
         except (ValueError, OSError, json.JSONDecodeError) as exc:
@@ -129,7 +127,9 @@ def register_enterprise_commands(cli_group):
 
         assessment_path = output_dir / "assessment.json"
         assessment_path.write_text(combined.to_json(), encoding="utf-8")
-        generator = PDFReportGenerator()
+        if profile.html_report or profile.pdf_report:
+            from tir_ios.reporting.pdf_generator import PDFReportGenerator
+            generator = PDFReportGenerator()
         if profile.html_report:
             generator.generate_html(combined, output_dir / "assessment.html")
         if profile.pdf_report:
