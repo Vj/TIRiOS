@@ -211,7 +211,9 @@ class ProxyTrafficAuditor:
             return None
         server_peer = getattr(server_conn, "peername", None)
         request = getattr(flow, "request", None)
-        timestamp = getattr(request, "timestamp_start", None)
+        timestamp = getattr(client_conn, "timestamp_start", None)
+        if timestamp is None:
+            timestamp = getattr(request, "timestamp_start", None)
         if timestamp is None:
             timestamp = datetime.now(timezone.utc).timestamp()
         destination_ip = str(server_peer[0]) if server_peer and len(server_peer) >= 2 else "0.0.0.0"
@@ -229,6 +231,7 @@ class ProxyTrafficAuditor:
         if connection_id is not None:
             self.apply_traffic_correlation(str(connection_id), result)
         return result
+
     def request(self, flow: object) -> None:
         """Inspect outgoing HTTP(S) request URLs and query parameters."""
         try:
