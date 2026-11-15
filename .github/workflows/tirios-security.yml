@@ -1,0 +1,41 @@
+name: TIRiOS Security Assessment
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "**/*.ipa"
+      - "**/*.swift"
+      - "**/*.m"
+      - "**/*.mm"
+      - "**/*.h"
+
+jobs:
+  security-assessment:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install TIRiOS
+        run: python -m pip install -e ".[dev]"
+      - name: Run assessment when an IPA is supplied
+        shell: bash
+        run: |
+          IPA=$(find . -maxdepth 3 -type f -name "*.ipa" -print -quit)
+          if [ -z "$IPA" ]; then
+            echo "No IPA artifact in this checkout; skipping application assessment."
+            exit 0
+          fi
+          tir-ios assessment "$IPA" --profile profiles/ci-strict.json --output-dir tirios-artifacts
+          tir-ios ci tirios-artifacts/assessment.json --fail-on Medium
+      - name: Upload assessment artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tirios-assessment
+          path: tirios-artifacts/
+          if-no-files-found: ignore
