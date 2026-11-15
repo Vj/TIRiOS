@@ -411,6 +411,46 @@
       "cwe": "CWE-389",
       "description": "The process allowed dynamic debugger/instrumentation attachment without detecting P_TRACED flags via sysctl or ptrace protections.",
       "remediation": "Add sysctl P_TRACED checks and Apple App Attest assertions for high-risk transactions."
-    }
+    },
+  "TIR-IOS-SAST-030": {
+    "rule_id": "TIR-IOS-SAST-030", "phase": "SAST", "domain": "Privacy Manifest",
+    "module": "sast_expansion", "title": "Privacy Manifest Missing or Incomplete",
+    "severity": "Low", "cvss_score": 2.0, "cvss_vector": "CVSS:3.1/AV:L/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N",
+    "masvs_category": "MASVS-PRIVACY-1", "mastg_test_id": "MASTG-TEST-0000",
+    "cwe": "CWE-1059", "description": "The app bundle contains no usable Apple privacy manifest or the manifest omits required declaration sections.",
+    "remediation": "Review Apple's current privacy manifest requirements and provide accurate NSPrivacyTracking, NSPrivacyCollectedDataTypes and NSPrivacyAccessedAPITypes declarations where applicable."
+  },
+  "TIR-IOS-SAST-031": {
+    "rule_id": "TIR-IOS-SAST-031", "phase": "SAST", "domain": "Third-party SDK Inventory",
+    "module": "sast_expansion", "title": "Third-party SDK Inventory",
+    "severity": "Info", "cvss_score": 0.0, "cvss_vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:N/I:N/A:N",
+    "masvs_category": "MASVS-PRIVACY-1", "mastg_test_id": "MASTG-TEST-0000",
+    "cwe": "CWE-1104", "description": "A third-party SDK or framework was identified. Presence alone does not establish a vulnerability.",
+    "remediation": "Verify SDK ownership, version, provenance, update status, data collection, privacy manifest and supply-chain integrity."
+  },
+  "TIR-IOS-SAST-032": {
+    "rule_id": "TIR-IOS-SAST-032", "phase": "SAST", "domain": "OAuth",
+    "module": "sast_expansion", "title": "OAuth Flow Requires Manual Security Review",
+    "severity": "Medium", "cvss_score": 4.0, "cvss_vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:L/A:N",
+    "masvs_category": "MASVS-AUTH-1", "mastg_test_id": "MASTG-TEST-0000",
+    "cwe": "CWE-287", "description": "OAuth-related code or redirect configuration was identified with a potentially incomplete state or PKCE validation pattern.",
+    "remediation": "Use Authorization Code with PKCE (S256), validate state and nonce where applicable, use exact redirect URI matching, and prefer claimed HTTPS universal links."
+  },
+  "TIR-IOS-SAST-033": {
+    "rule_id": "TIR-IOS-SAST-033", "phase": "SAST", "domain": "Deep Links",
+    "module": "sast_expansion", "title": "Custom URL Scheme Requires Deep-link Validation",
+    "severity": "Low", "cvss_score": 2.5, "cvss_vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:L/A:N",
+    "masvs_category": "MASVS-PLATFORM-1", "mastg_test_id": "MASTG-TEST-0000",
+    "cwe": "CWE-939", "description": "A custom URL scheme is registered. Custom schemes can be claimed by another app and incoming parameters must be treated as untrusted.",
+    "remediation": "Prefer Associated Domains universal links for sensitive flows and validate host, path, parameters, authentication state and authorization before acting."
+  },
+  "TIR-IOS-SAST-034": {
+    "rule_id": "TIR-IOS-SAST-034", "phase": "SAST", "domain": "Cryptography",
+    "module": "sast_expansion", "title": "Weak or Risky Cryptographic API Usage",
+    "severity": "High", "cvss_score": 7.0, "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:N",
+    "masvs_category": "MASVS-CRYPTO-1", "mastg_test_id": "MASTG-TEST-0000",
+    "cwe": "CWE-327", "description": "Source code contains references to deprecated hashes, obsolete ciphers, ECB mode or non-cryptographic random generators in a cryptographic context.",
+    "remediation": "Use CryptoKit authenticated encryption (AES-GCM or ChaChaPoly), modern hashes such as SHA-256 where required, and SecRandomCopyBytes for cryptographic randomness. Validate key management and protocol context."
+  }
   }
 }
