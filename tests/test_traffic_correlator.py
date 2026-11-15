@@ -10,6 +10,8 @@ def event(pid=321, bundle="com.example.target", ip="203.0.113.10", port=443, tim
         destination_ip=ip,
         destination_port=port,
         socket_fd=12,
+        local_ip="192.0.2.44",
+        local_port=50123,
     )
 
 
@@ -85,3 +87,46 @@ def test_no_proxy_observation_matches_unknown_connection():
 
     auditor = ProxyTrafficAuditor()
     assert not auditor.apply_traffic_correlation("missing", object())
+
+
+
+def test_exact_client_socket_tuple_confirms_app_process_attribution():
+    result = TrafficCorrelator().correlate(
+        ProxyEndpoint(
+            "203.0.113.10", 443, 1000.0, "flow-socket",
+            client_ip="192.0.2.44", client_port=50123,
+        ),
+        [event()],
+    )
+
+    assert result.attribution is TrafficAttribution.APP_CONFIRMED
+    assert result.method == "socket_tuple"
+    assert result.bundle_id == "com.example.target"
+    assert result.process_id == 321
+
+
+def test_exact_socket_tuple_is_ambiguous_when_multiple_process_events_match():
+    result = TrafficCorrelator().correlate(
+        ProxyEndpoint(
+            "203.0.113.10", 443, 1000.0,
+            client_ip="192.0.2.44", client_port=50123,
+        ),
+        [event(), event(pid=999, bundle="com.example.other")],
+    )
+
+    assert result.attribution is TrafficAttribution.UNATTRIBUTED
+    assert result.matched_event_count == 2
+
+
+def test_proxy_accepts_app_confirmed_only_for_exact_socket_tuple():
+    from tir_ios.modules.dast.proxy_auditor import ProxyTrafficAuditor
+
+    auditor = ProxyTrafficAuditor()
+    auditor._observations.append(TLSObservation(host="api.example.test", connection_id="flow-3"))
+    correlation = TrafficCorrelator().correlate(
+        ProxyEndpoint("203.0.113.10", 443, 1000.0, "flow-3", "192.0.2.44", 50123),
+        [event()],
+    )
+
+    assert auditor.apply_traffic_correlation("flow-3", correlation)
+    assert auditor.get_observations()[0].attribution is TrafficAttribution.APP_CONFIRMED
