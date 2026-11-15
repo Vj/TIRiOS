@@ -2,32 +2,30 @@
 
 /*
  * Observe outbound connect() calls in the Frida-attached app process.
- *
- * These events are not HTTP requests and are not one-to-one mitmproxy flow
- * identifiers. TIRiOS correlates them conservatively by destination and time.
+ * The local socket tuple is collected in onLeave, after connect() has had
+ * an opportunity to allocate the local ephemeral port.
  */
 if (ObjC.available) {
     const bundleIdentifier = () => {
         try {
-            const bundle = ObjC.classes.NSBundle.mainBundle();
-            return bundle.bundleIdentifier().toString();
+            return ObjC.classes.NSBundle.mainBundle().bundleIdentifier().toString();
         } catch (_) {
             return '';
         }
     };
 
-    const bytesAt = (address, length) => {
-        const raw = new Uint8Array(address.readByteArray(length));
-        return Array.from(raw);
-    };
-
-    const ipv4 = (bytes) => bytes.slice(4, 8).join('.');
-    const ipv6 = (bytes) => {
-        const words = [];
-        for (let i = 8; i < 24; i += 2) {
-            words.push(((bytes[i] << 8) | bytes[i + 1]).toString(16));
+    const readEndpoint = (address, length) => {
+        const bytes = Array.from(new Uint8Array(address.readByteArray(Math.min(length, 28))));
+        const family = address.add(1).readU8(); // Darwin sockaddr: sa_len then sa_family
+        if (family === 2 && length >= 8) {
+            return { ip: bytes.slice(4, 8).join('.'), port: (bytes[2] << 8) | bytes[3] };
         }
-        return words.join(':');
+        if (family === 30 && length >= 24) {
+            const words = [];
+            for (let i = 8; i < 24; i += 2) words.push(((bytes[i] << 8) | bytes[i + 1]).toString(16));
+            return { ip: words.join(':'), port: (bytes[2] << 8) | bytes[3] };
+        }
+        return null;
     };
 
     const connectPtr = Module.findExportByName('libSystem.B.dylib', 'connect');
@@ -43,57 +41,44 @@ if (ObjC.available) {
                     const sockaddr = args[1];
                     const length = args[2].toInt32();
                     if (sockaddr.isNull() || length < 8) return;
-
-                    const family = sockaddr.add(1).readU8();
-                    const bytes = bytesAt(sockaddr, Math.min(length, 28));
-                    let destinationIp = '';
-                    let destinationPort = 0;
-
-                    // Darwin sockaddr_in: family, port (network byte order), IPv4 address.
-                    if (family === 2 && length >= 8) {
-                        destinationPort = (bytes[2] << 8) | bytes[3];
-                        destinationIp = ipv4(bytes);
-                    // Darwin sockaddr_in6 uses AF_INET6=30.
-                    } else if (family === 30 && length >= 24) {
-                        destinationPort = (bytes[2] << 8) | bytes[3];
-                        destinationIp = ipv6(bytes);
-                    } else {
-                        return;
-                    }
-
+                    const endpoint = readEndpoint(sockaddr, length);
+                    if (!endpoint) return;
+                    this.socketFd = args[0].toInt32();
+                    this.destinationIp = endpoint.ip;
+                    this.destinationPort = endpoint.port;
+                } catch (e) {
+                    send({ category: 'TIR_DEBUG', error: 'connect observer onEnter: ' + e.message });
+                }
+            },
+            onLeave(_retval) {
+                if (this.socketFd === undefined) return;
+                try {
                     let localIp = '';
                     let localPort = 0;
                     if (getSockName) {
                         const localSockaddr = Memory.alloc(128);
                         const localLength = Memory.alloc(4);
                         localLength.writeU32(128);
-                        if (getSockName(args[0].toInt32(), localSockaddr, localLength) === 0) {
-                            const localBytes = bytesAt(localSockaddr, Math.min(localLength.readU32(), 28));
-                            const localFamily = localSockaddr.add(1).readU8();
-                            if (localFamily === 2 && localBytes.length >= 8) {
-                                localPort = (localBytes[2] << 8) | localBytes[3];
-                                localIp = ipv4(localBytes);
-                            } else if (localFamily === 30 && localBytes.length >= 24) {
-                                localPort = (localBytes[2] << 8) | localBytes[3];
-                                localIp = ipv6(localBytes);
-                            }
+                        if (getSockName(this.socketFd, localSockaddr, localLength) === 0) {
+                            const localLengthValue = localLength.readU32();
+                            const local = readEndpoint(localSockaddr, localLengthValue);
+                            if (local) { localIp = local.ip; localPort = local.port; }
                         }
                     }
-
                     send({
                         category: 'TIR_NETWORK_EVENT',
                         syscall: 'connect',
                         process_id: Process.id,
                         bundle_id: bundleIdentifier(),
                         timestamp: Date.now() / 1000.0,
-                        socket_fd: args[0].toInt32(),
+                        socket_fd: this.socketFd,
                         local_ip: localIp,
                         local_port: localPort,
-                        destination_ip: destinationIp,
-                        destination_port: destinationPort
+                        destination_ip: this.destinationIp,
+                        destination_port: this.destinationPort
                     });
                 } catch (e) {
-                    send({ category: 'TIR_DEBUG', error: 'connect observer: ' + e.message });
+                    send({ category: 'TIR_DEBUG', error: 'connect observer onLeave: ' + e.message });
                 }
             }
         });
