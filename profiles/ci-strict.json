@@ -1,0 +1,13 @@
+{
+  "name": "ci-strict",
+  "description": "Static-analysis profile with a medium-severity CI gate.",
+  "sast_enabled": true,
+  "dast_enabled": false,
+  "html_report": false,
+  "pdf_report": false,
+  "evidence_enabled": true,
+  "fail_on": "Medium",
+  "source_scan_enabled": true,
+  "dast_duration": 120,
+  "settings": {"include_informational": false, "evidence_hash": "sha256"}
+}

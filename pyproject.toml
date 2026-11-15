@@ -34,4 +34,4 @@ tir-ios = "tir_ios.cli:cli"
 include = ["tir_ios*"]
 
 [tool.setuptools.package-data]
-tir_ios = ["rules/*.json", "modules/dast/agents/*.js", "reporting/templates/*.j2"]
+tir_ios = ["rules/*.json", "modules/dast/agents/*.js", "reporting/templates/*.j2", "profiles/*.json"]
