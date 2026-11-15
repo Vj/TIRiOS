@@ -121,7 +121,8 @@ class ProxyTrafficAuditor:
         """
         expected = self._normalize_fingerprint(expected_spki_sha256)
         observed = self._normalize_fingerprint(observed_spki_sha256)
-        valid_sha256 = len(expected) == 64 and len(observed) == 64\n        mismatch = bool(valid_sha256 and expected != observed)
+        valid_sha256 = len(expected) == 64 and len(observed) == 64
+        mismatch = bool(valid_sha256 and expected != observed)
         verified_bypass = (
             mismatch
             and baseline_request_succeeded
