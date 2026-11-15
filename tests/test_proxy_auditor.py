@@ -104,3 +104,35 @@ def test_sensitive_query_parameter_detection_remains_available():
 
     assert len(auditor.get_findings()) == 1
     assert auditor.get_findings()[0].finding_id == "TIR-IOS-DAST-021"
+
+
+def test_unattributed_pin_mismatch_never_becomes_app_finding():
+    auditor = ProxyTrafficAuditor()
+    observation = auditor.record_pinning_test(
+        host="api.example.test",
+        expected_spki_sha256="aa" * 32,
+        observed_spki_sha256="bb" * 32,
+        baseline_request_succeeded=True,
+        proxy_certificate_trusted=True,
+        mismatch_request_succeeded=True,
+        attribution=TrafficAttribution.DEVICE_LEVEL,
+    )
+
+    assert observation.assessment is TLSAssessment.PINNING_TEST_INCONCLUSIVE
+    assert auditor.get_findings() == []
+
+
+def test_malformed_spki_fingerprints_are_inconclusive():
+    auditor = ProxyTrafficAuditor()
+    observation = auditor.record_pinning_test(
+        host="api.example.test",
+        expected_spki_sha256="expected-pin",
+        observed_spki_sha256="different-pin",
+        baseline_request_succeeded=True,
+        proxy_certificate_trusted=True,
+        mismatch_request_succeeded=True,
+        attribution=TrafficAttribution.APP_CONFIRMED,
+    )
+
+    assert observation.assessment is TLSAssessment.PINNING_TEST_INCONCLUSIVE
+    assert auditor.get_findings() == []
