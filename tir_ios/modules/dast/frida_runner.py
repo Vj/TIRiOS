@@ -118,6 +118,8 @@ class FridaRuntimeAuditor:
                     destination_ip=str(payload["destination_ip"]),
                     destination_port=int(payload["destination_port"]),
                     socket_fd=int(payload["socket_fd"]) if payload.get("socket_fd") is not None else None,
+                    local_ip=str(payload["local_ip"]) if payload.get("local_ip") else None,
+                    local_port=int(payload["local_port"]) if payload.get("local_port") else None,
                     syscall=str(payload.get("syscall", "connect")),
                 )
                 if event.bundle_id == self.bundle_id:
