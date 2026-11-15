@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field, asdict
+from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Dict, Any
 import json
@@ -10,6 +11,54 @@ class Severity(str, Enum):
     MEDIUM = "Medium"
     LOW = "Low"
     INFO = "Info"
+
+
+class EvidenceConfidence(str, Enum):
+    LOW = "Low"
+    MEDIUM = "Medium"
+    HIGH = "High"
+    VERIFIED = "Verified"
+
+
+class TrafficAttribution(str, Enum):
+    UNATTRIBUTED = "Unattributed"
+    DEVICE_LEVEL = "Device-level"
+    APP_CORRELATED = "App-correlated"
+    APP_CONFIRMED = "App-confirmed"
+
+
+class TLSAssessment(str, Enum):
+    TLS_HANDSHAKE_OBSERVED = "TLS_HANDSHAKE_OBSERVED"
+    PINNING_TEST_INCONCLUSIVE = "PINNING_TEST_INCONCLUSIVE"
+    PINNING_ENFORCED = "PINNING_ENFORCED"
+    PINNING_BYPASS_VERIFIED = "PINNING_BYPASS_VERIFIED"
+
+
+@dataclass
+class TLSObservation:
+    """A proxy-side TLS observation; a handshake alone is not a pinning verdict."""
+
+    host: str
+    observed_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    assessment: TLSAssessment = TLSAssessment.TLS_HANDSHAKE_OBSERVED
+    attribution: TrafficAttribution = TrafficAttribution.UNATTRIBUTED
+    bundle_id: str | None = None
+    process_id: int | None = None
+    connection_id: str | None = None
+    tls_version: str | None = None
+    cipher: str | None = None
+    expected_spki_sha256: str | None = None
+    observed_spki_sha256: str | None = None
+    baseline_request_succeeded: bool | None = None
+    proxy_certificate_trusted: bool | None = None
+    mismatch_request_succeeded: bool | None = None
+    notes: str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        data = asdict(self)
+        data["assessment"] = self.assessment.value
+        data["attribution"] = self.attribution.value
+        return data
 
 
 @dataclass
