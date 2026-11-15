@@ -121,7 +121,7 @@ class ProxyTrafficAuditor:
         """
         expected = self._normalize_fingerprint(expected_spki_sha256)
         observed = self._normalize_fingerprint(observed_spki_sha256)
-        mismatch = bool(expected and observed and expected != observed)
+        valid_sha256 = len(expected) == 64 and len(observed) == 64\n        mismatch = bool(valid_sha256 and expected != observed)
         verified_bypass = (
             mismatch
             and baseline_request_succeeded
@@ -142,6 +142,7 @@ class ProxyTrafficAuditor:
         observation = TLSObservation(
             host=host,
             assessment=assessment,
+            confidence=confidence,
             attribution=attribution,
             bundle_id=bundle_id,
             process_id=process_id,
@@ -151,7 +152,7 @@ class ProxyTrafficAuditor:
             baseline_request_succeeded=baseline_request_succeeded,
             proxy_certificate_trusted=proxy_certificate_trusted,
             mismatch_request_succeeded=mismatch_request_succeeded,
-            notes=f"confidence={confidence.value}; {evidence}".strip(),
+            notes=evidence,
         )
         self._observations.append(observation)
 
