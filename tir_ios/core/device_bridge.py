@@ -1,3 +1,5 @@
+import asyncio
+import inspect
 from pathlib import Path
 from typing import Iterator, Optional
 from pymobiledevice3.lockdown import create_using_usbmux
@@ -10,17 +12,24 @@ class DeviceConnectionError(Exception):
     """Raised when no iOS device is connected or lockdown pairing fails."""
 
 
+def _run_maybe_async(result):
+    """Executes a coroutine if pymobiledevice3 returns an async awaitable."""
+    if inspect.isawaitable(result):
+        return asyncio.run(result)
+    return result
+
+
 class IOSDeviceBridge:
     def __init__(self, udid: Optional[str] = None):
         self.udid = udid or self._discover_first_udid()
         try:
-            self.lockdown = create_using_usbmux(serial=self.udid)
+            self.lockdown = _run_maybe_async(create_using_usbmux(serial=self.udid))
         except Exception as exc:
             raise DeviceConnectionError(f"Failed to establish lockdown session with {self.udid}: {exc}") from exc
 
     @staticmethod
     def _discover_first_udid() -> str:
-        devices = list_devices()
+        devices = _run_maybe_async(list_devices())
         if not devices:
             raise DeviceConnectionError("No iOS devices detected over usbmuxd. Ensure USB connection and device trust.")
         return devices[0].serial
